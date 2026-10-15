@@ -37,13 +37,13 @@ export const LocationSection: React.FC = () => {
   };
 
   return (
-    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs" id="location">
+    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs up-section" id="location">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <span className="text-xs font-bold text-[#a67c32] uppercase tracking-wider">
             Prime Central Location
           </span>
-          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5">
+          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5 up-title-accent">
             Neighborhood & Proximity
           </h3>
           <p className="text-xs text-gray-500 mt-1">
@@ -53,7 +53,7 @@ export const LocationSection: React.FC = () => {
 
         <button
           onClick={handleOpenMaps}
-          className="px-4 py-2 border border-gray-300 hover:border-gray-400 text-gray-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 border border-gray-300 hover:border-gray-400 text-gray-800 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer up-btn"
         >
           <Navigation className="w-4 h-4 text-[#a67c32]" />
           <span>Get Directions</span>
@@ -72,10 +72,10 @@ export const LocationSection: React.FC = () => {
           {hotel.surroundingPlaces.map((place, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100/80 border border-gray-100 transition-colors"
+              className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100/80 border border-gray-100 transition-colors up-card up-icon-parent"
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-white shadow-xs shrink-0">
+                <div className="p-2 rounded-lg bg-white shadow-xs shrink-0 up-icon-badge">
                   {getIcon(place.type)}
                 </div>
                 <div>
@@ -94,12 +94,12 @@ export const LocationSection: React.FC = () => {
         {/* Right: Interactive styled map representation */}
         <div className="lg:col-span-6 h-80 lg:h-auto rounded-2xl overflow-hidden relative border border-gray-200 shadow-inner bg-slate-100 flex flex-col justify-between p-6">
           {/* Stylized map backdrop visual */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#a67c32_1px,transparent_1px)] [background-size:16px_16px]" />
+          <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#a67c32_1px,transparent_1px)] [background-size:16px_16px] up-map-dots" />
 
           {/* Central Pin Card */}
           <div className="relative z-10 bg-white/95 backdrop-blur-md p-4 rounded-xl shadow-lg border border-gray-200 max-w-sm">
             <div className="flex items-center gap-2 text-xs font-bold text-[#a67c32] mb-1">
-              <MapPin className="w-4 h-4 fill-[#a67c32] text-white" />
+              <MapPin className="w-4 h-4 fill-[#a67c32] text-white up-pin rounded-full" />
               <span>{hotel.name}</span>
             </div>
             <p className="text-xs text-gray-600 leading-snug">
@@ -117,7 +117,7 @@ export const LocationSection: React.FC = () => {
             </div>
             <button
               onClick={handleOpenMaps}
-              className="px-3 py-1.5 bg-[#a67c32] hover:bg-[#8e6826] text-white font-bold rounded-lg text-xs"
+              className="px-3 py-1.5 bg-[#a67c32] hover:bg-[#8e6826] text-white font-bold rounded-lg text-xs up-btn"
             >
               Open Maps
             </button>

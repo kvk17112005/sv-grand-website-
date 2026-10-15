@@ -7,7 +7,8 @@
     "start": "node --env-file=.env src/server.js",
     "db:migrate": "node --env-file=.env src/migrate.js",
     "db:seed-accounts": "node --env-file=.env src/seed-accounts.js",
-    "admin:promote": "node --env-file=.env src/promote-user.js"
+    "admin:promote": "node --env-file=.env src/promote-user.js",
+    "test": "node --env-file=.env test/run.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

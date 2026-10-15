@@ -19,11 +19,64 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export type RoomStatus = 'available' | 'occupied' | 'cleaning' | 'maintenance' | 'pending_approval';
 
-export type BookingStatus = 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+export type BookingStatus =
+  | 'pending_payment'
+  | 'payment_verification'
+  | 'confirmed'
+  | 'checked_in'
+  | 'checked_out'
+  | 'cancelled'
+  | 'no_show';
 
-export type PaymentStatus = 'paid' | 'pending' | 'partially_paid' | 'refunded';
+/**
+ * Payment status values. `paid | pending | partially_paid | refunded` are used
+ * by the local/legacy flow; the remaining values mirror the backend enum
+ * (`bookings.payment_status` / `payments.status`). Never treat a booking as
+ * paid unless the status is `paid` or `verified`.
+ */
+export type PaymentStatus =
+  | 'paid'
+  | 'pending'
+  | 'partially_paid'
+  | 'refunded'
+  | 'awaiting_payment'
+  | 'reference_submitted'
+  | 'verified'
+  | 'rejected'
+  | 'pay_at_hotel';
 
-export type PaymentMethod = 'pay_at_hotel' | 'upi' | 'credit_card' | 'debit_card' | 'net_banking' | 'oyo_wallet';
+export type PaymentMethod = 'pay_at_hotel' | 'upi';
+
+/** True only when a payment has actually been completed/verified. */
+export function isPaymentSettled(status?: string): boolean {
+  const value = (status || '').toLowerCase();
+  return value === 'paid' || value === 'verified';
+}
+
+/** Human-readable label for any payment status (local or backend). */
+export function getPaymentStatusLabel(status?: string): string {
+  switch ((status || '').toLowerCase()) {
+    case 'paid':
+    case 'verified':
+      return 'Paid / Verified';
+    case 'reference_submitted':
+      return 'Payment Under Verification';
+    case 'awaiting_payment':
+      return 'Awaiting Payment';
+    case 'pending':
+      return 'Pending Payment';
+    case 'rejected':
+      return 'Payment Rejected';
+    case 'pay_at_hotel':
+      return 'Pay at Hotel';
+    case 'partially_paid':
+      return 'Partially Paid';
+    case 'refunded':
+      return 'Refunded';
+    default:
+      return status ? status : 'Pending Payment';
+  }
+}
 
 export interface RoomType {
   id: string;
@@ -155,6 +208,19 @@ export interface AddOnService {
   icon: string;
 }
 
+export interface BookingPayment {
+  id: string;
+  method: string;
+  amount: number;
+  status: string;
+  utr?: string | null;
+  upiId?: string | null;
+  screenshotUrl?: string | null;
+  submittedAt?: string | null;
+  verifiedAt?: string | null;
+  rejectionReason?: string | null;
+}
+
 export interface Booking {
   id: string; // e.g. SVG-91024
   bookingCode: string; // Unique confirmation code (e.g. SVG-84920)
@@ -190,6 +256,7 @@ export interface Booking {
   totalAmount: number;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  payments?: BookingPayment[];
   approvalStatus: ApprovalStatus; // 'pending' | 'approved' | 'rejected'
   bookingStatus: BookingStatus;
   transactionId?: string;

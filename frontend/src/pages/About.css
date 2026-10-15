@@ -152,13 +152,36 @@
   content: "";
 }
 
-.about-hero-visual > img {
+.about-hero-photo {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  background: #201d16;
+}
+
+.about-hero-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: cover;
   object-position: center;
+  transform: scale(1.03);
+  animation: aboutKenBurns 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.about-hero-sheen {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+  transform: skewX(-14deg);
+  pointer-events: none;
+  animation: aboutSheen 7.5s ease-in-out 1.4s infinite;
 }
 
 .about-image-caption {
@@ -199,6 +222,17 @@
   color: #fff;
   background: #a8885a;
   text-align: center;
+  animation: aboutStampFloat 6s ease-in-out infinite;
+}
+
+.about-hero-stamp::after {
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(200, 165, 100, 0.7);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+  animation: aboutStampRing 3.4s ease-out infinite;
 }
 
 .about-hero-stamp > span {
@@ -224,6 +258,9 @@
 }
 
 .about-welcome {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   margin-top: 94px;
   padding: 44px clamp(24px, 5vw, 64px);
   display: grid;
@@ -231,9 +268,29 @@
   align-items: end;
   gap: 20px 40px;
   color: #fff;
+  background: #191b17;
+}
+
+.about-welcome::before {
+  position: absolute;
+  inset: -8%;
+  z-index: -2;
+  background: url("/hotel/hotel-front.jpg") center 48% / cover;
+  content: "";
+  pointer-events: none;
+  animation: aboutKenBurns 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.about-welcome::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background:
-    linear-gradient(105deg, rgba(25, 27, 23, 0.9), rgba(25, 27, 23, 0.66)),
-    url("/hotel/hotel-front.jpg") center 48% / cover;
+    radial-gradient(120% 150% at 86% 8%, rgba(200, 165, 100, 0.28), transparent 55%),
+    linear-gradient(105deg, rgba(25, 27, 23, 0.92), rgba(25, 27, 23, 0.62));
+  content: "";
+  pointer-events: none;
 }
 
 .about-welcome .about-kicker {
@@ -297,17 +354,37 @@
 }
 
 .about-nearby-card {
+  position: relative;
   min-width: 0;
   overflow: hidden;
   padding: 0 0 22px;
   border: 1px solid var(--about-line);
   background: #fff;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.about-nearby-card::before {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #c5a575, #a8885a);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .about-nearby-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 18px 38px rgba(43, 38, 28, 0.14);
+  transform: translateY(-6px);
+  border-color: #cbb489;
+  box-shadow: 0 22px 44px rgba(43, 38, 28, 0.16);
+}
+
+.about-nearby-card:hover::before {
+  transform: scaleX(1);
 }
 
 .about-nearby-image {
@@ -316,6 +393,21 @@
   margin-bottom: 19px;
   overflow: hidden;
   background: #d8d0c2;
+}
+
+.about-nearby-image::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.42) 50%, transparent 68%);
+  content: "";
+  transform: translateX(-130%);
+  transition: transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.about-nearby-card:hover .about-nearby-image::before {
+  transform: translateX(130%);
 }
 
 .about-nearby-image::after {
@@ -352,6 +444,14 @@
   color: #fff;
   background: rgba(33, 35, 30, 0.62);
   backdrop-filter: blur(8px);
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), background 320ms ease,
+    border-color 320ms ease;
+}
+
+.about-nearby-card:hover .about-nearby-icon {
+  transform: scale(1.1) rotate(-8deg);
+  background: rgba(168, 136, 90, 0.92);
+  border-color: rgba(255, 255, 255, 0.85);
 }
 
 .about-nearby-distance {
@@ -389,6 +489,7 @@
 }
 
 .about-location-mark {
+  position: relative;
   width: 52px;
   height: 52px;
   display: grid;
@@ -396,6 +497,15 @@
   place-items: center;
   color: #fff;
   background: #a8885a;
+}
+
+.about-location-mark::after {
+  position: absolute;
+  inset: -5px;
+  border: 1px solid rgba(168, 136, 90, 0.7);
+  content: "";
+  pointer-events: none;
+  animation: aboutMarkPulse 2.8s ease-out infinite;
 }
 
 .about-location-copy {
@@ -434,10 +544,103 @@
   color: #5e6059;
   font-size: 11px;
   font-weight: 700;
+  transition: color 200ms ease, transform 200ms ease;
+}
+
+.about-values > div:hover {
+  color: var(--about-ink);
+  transform: translateY(-3px);
 }
 
 .about-values svg {
   color: var(--about-gold);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-values > div:hover svg {
+  transform: scale(1.18) rotate(-6deg);
+}
+
+@keyframes aboutKenBurns {
+  from {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.1) translate3d(-1.4%, -1.2%, 0);
+  }
+}
+
+@keyframes aboutSheen {
+  0% {
+    transform: translateX(0) skewX(-14deg);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.9;
+  }
+  58% {
+    transform: translateX(330%) skewX(-14deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(330%) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+@keyframes aboutStampFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes aboutStampRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.32);
+    opacity: 0;
+  }
+}
+
+@keyframes aboutMarkPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-hero-photo img,
+  .about-hero-sheen,
+  .about-hero-stamp,
+  .about-hero-stamp::after,
+  .about-welcome::before,
+  .about-location-mark::after {
+    animation: none;
+  }
+
+  .about-nearby-image::before,
+  .about-nearby-card,
+  .about-nearby-icon,
+  .about-values > div,
+  .about-values svg {
+    transition: none;
+  }
+
+  .about-nearby-card:hover .about-nearby-image::before {
+    transform: translateX(-130%);
+  }
 }
 
 @media (max-width: 980px) {
@@ -564,4 +767,89 @@
     padding-left: 15px;
   }
 
+}
+
+/* =====================================================
+   DARK MODE
+===================================================== */
+body.dark-mode .about-page {
+  --about-ink: #ececec;
+  --about-muted: #a3a39c;
+  --about-line: #34352f;
+  --about-paper: #141414;
+  color: #ececec;
+  background: #141414;
+}
+
+body.dark-mode .about-hero-photo,
+body.dark-mode .about-nearby-image {
+  background: #101010;
+}
+
+body.dark-mode .about-primary-link {
+  background: #c49a58;
+  color: #1b1b1b !important;
+}
+
+body.dark-mode .about-primary-link:hover {
+  background: #dcb476;
+}
+
+body.dark-mode .about-secondary-link {
+  color: #ececec;
+  border-bottom-color: #6d5a3a;
+}
+
+body.dark-mode .about-google-rating {
+  color: #a3a39c !important;
+}
+
+body.dark-mode .about-google-rating strong {
+  color: #ffffff;
+}
+
+body.dark-mode .about-rating-star {
+  background: #2a2a24;
+  color: #d9b877;
+}
+
+body.dark-mode .about-image-caption {
+  color: #f2f2f2;
+  background: rgba(28, 28, 28, 0.94);
+}
+
+body.dark-mode .about-nearby-card {
+  background: #1c1c1c;
+  border-color: #34352f;
+}
+
+body.dark-mode .about-nearby-card:hover {
+  border-color: #6d5a3a;
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.55);
+}
+
+body.dark-mode .about-nearby-card h3 {
+  color: #f2f2f2;
+}
+
+body.dark-mode .about-nearby-card p,
+body.dark-mode .about-nearby-heading > p {
+  color: #a3a39c;
+}
+
+body.dark-mode .about-location {
+  background: #1c1c1c;
+  border-color: #34352f;
+}
+
+body.dark-mode .about-location-copy > p {
+  color: #a3a39c;
+}
+
+body.dark-mode .about-values > div {
+  color: #a3a39c;
+}
+
+body.dark-mode .about-values > div:hover {
+  color: #ffffff;
 }

@@ -49,11 +49,11 @@ export const RoomListSection: React.FC = () => {
             <span className="text-xs font-bold text-[#a67c32] uppercase tracking-wider">
               Available Accommodations
             </span>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full up-glow">
               {totalAvailableKeys} Keys Ready
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight mt-0.5 up-title-accent">
             Select Your Room & Plan
           </h2>
           <p className="text-xs text-gray-500 mt-1">
@@ -75,7 +75,7 @@ export const RoomListSection: React.FC = () => {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer up-tab ${
                   selectedCategory === cat.id
                     ? 'bg-white text-gray-950 shadow-xs'
                     : 'text-gray-600 hover:text-gray-900'
@@ -110,7 +110,7 @@ export const RoomListSection: React.FC = () => {
             </p>
             <button
               onClick={() => setSelectedCategory('all')}
-              className="mt-3 px-4 py-2 bg-[#a67c32] text-white text-xs font-bold rounded-xl cursor-pointer"
+              className="mt-3 px-4 py-2 bg-[#a67c32] text-white text-xs font-bold rounded-xl cursor-pointer up-btn"
             >
               Show All Rooms
             </button>

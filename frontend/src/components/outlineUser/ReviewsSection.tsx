@@ -58,13 +58,13 @@ export const ReviewsSection: React.FC = () => {
   };
 
   return (
-    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs" id="reviews">
+    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs up-section" id="reviews">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
         <div>
           <span className="text-xs font-bold text-[#a67c32] uppercase tracking-wider">
             Verified Guest Feedback
           </span>
-          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5">
+          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5 up-title-accent">
             Guest Ratings & Experiences
           </h3>
           <p className="text-xs text-gray-500 mt-1">
@@ -74,7 +74,7 @@ export const ReviewsSection: React.FC = () => {
 
         <button
           onClick={() => setIsWriteModalOpen(true)}
-          className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors self-start sm:self-auto cursor-pointer up-btn"
         >
           <Plus className="w-4 h-4 text-[#a67c32]" />
           <span>Write a Review</span>
@@ -84,8 +84,8 @@ export const ReviewsSection: React.FC = () => {
       {/* Ratings Metrics Breakdown Bar */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-6 border-b border-gray-100">
         {/* Left score block */}
-        <div className="md:col-span-4 flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-          <div className="p-3 bg-emerald-600 text-white rounded-2xl flex flex-col items-center justify-center shrink-0 w-20 h-20 shadow-xs">
+        <div className="md:col-span-4 flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 up-card up-icon-parent">
+          <div className="p-3 bg-emerald-600 text-white rounded-2xl flex flex-col items-center justify-center shrink-0 w-20 h-20 shadow-xs up-icon-badge up-glow">
             <div className="text-2xl font-black">{hotel.rating}</div>
             <div className="flex text-amber-300">
               <Star className="w-3.5 h-3.5 fill-amber-300" />
@@ -117,7 +117,7 @@ export const ReviewsSection: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-600 rounded-full"
+                    className="h-full bg-emerald-600 rounded-full up-bar-fill"
                     style={{ width: `${(stat.score / 5) * 100}%` }}
                   />
                 </div>
@@ -143,7 +143,7 @@ export const ReviewsSection: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setSelectedFilter(tab.id as any)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer up-tab ${
               selectedFilter === tab.id
                 ? 'bg-[#1c1c1c] text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -159,7 +159,7 @@ export const ReviewsSection: React.FC = () => {
         {filteredReviews.map((rev) => (
           <div
             key={rev.id}
-            className="p-5 rounded-2xl bg-gray-50/60 border border-gray-200/80 space-y-3"
+            className="p-5 rounded-2xl bg-gray-50/60 border border-gray-200/80 space-y-3 up-card"
           >
             {/* Reviewer line */}
             <div className="flex items-start justify-between gap-2">
@@ -215,7 +215,7 @@ export const ReviewsSection: React.FC = () => {
             <div className="flex items-center gap-3 pt-1 text-xs text-gray-500">
               <button
                 onClick={() => voteHelpfulReview(rev.id)}
-                className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 px-2 py-1 rounded-lg transition-colors cursor-pointer up-btn"
               >
                 <ThumbsUp className="w-3.5 h-3.5" />
                 <span>Helpful ({rev.helpfulVotes})</span>
@@ -228,7 +228,7 @@ export const ReviewsSection: React.FC = () => {
       {/* Write a Review Modal */}
       {isWriteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-200">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-gray-200 up-banner">
             <div className="p-4 sm:px-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="font-bold text-base text-gray-900">Share Your Stay Experience</h3>
               <button

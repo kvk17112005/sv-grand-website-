@@ -668,3 +668,140 @@ body.dark-mode .profile-signout-btn {
 body.dark-mode .profile-signout-btn:hover {
   background: #382222;
 }
+
+/* =====================================================
+   MICRO-INTERACTIONS & MOTION
+===================================================== */
+
+.profile-avatar {
+  position: relative;
+  animation: profileAvatarPulse 4.5s ease-in-out infinite;
+}
+
+.profile-verified-badge {
+  animation: profileBadgePulse 2.6s ease-out infinite;
+}
+
+.profile-card-icon {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), background 300ms ease;
+}
+
+.profile-card:hover .profile-card-icon {
+  transform: rotate(-8deg) scale(1.08);
+  background: #f6ecd7;
+}
+
+.profile-shortcut-link {
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-shortcut-link:hover {
+  box-shadow: 0 8px 20px rgba(166, 124, 50, 0.16);
+}
+
+.profile-shortcut-link svg:last-child {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-shortcut-link:hover svg:last-child {
+  transform: translateX(4px);
+}
+
+.profile-submit-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-submit-btn::after {
+  position: absolute;
+  top: 0;
+  left: -140%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  content: "";
+  transform: skewX(-20deg);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+
+.profile-submit-btn:hover:not(:disabled)::after {
+  left: 150%;
+}
+
+.profile-perk-item {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.profile-perk-item:hover {
+  transform: translateY(-4px);
+  border-color: #d8c7a7;
+  box-shadow: 0 14px 30px rgba(166, 124, 50, 0.14);
+}
+
+.profile-perk-icon {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-perk-item:hover .profile-perk-icon {
+  transform: scale(1.14) rotate(-6deg);
+}
+
+.profile-support-btn {
+  transition: transform 200ms ease, background 200ms ease, box-shadow 200ms ease;
+}
+
+.profile-support-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
+}
+
+@keyframes profileAvatarPulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 24px rgba(166, 124, 50, 0.28);
+  }
+  50% {
+    box-shadow: 0 12px 34px rgba(166, 124, 50, 0.46);
+  }
+}
+
+@keyframes profileBadgePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(23, 107, 67, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(23, 107, 67, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 107, 67, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-avatar,
+  .profile-verified-badge {
+    animation: none;
+  }
+
+  .profile-card-icon,
+  .profile-shortcut-link,
+  .profile-shortcut-link svg:last-child,
+  .profile-perk-item,
+  .profile-perk-icon,
+  .profile-support-btn {
+    transition: none;
+  }
+
+  .profile-submit-btn::after {
+    display: none;
+  }
+
+  .profile-card:hover .profile-card-icon,
+  .profile-perk-item:hover,
+  .profile-perk-item:hover .profile-perk-icon,
+  .profile-support-btn:hover {
+    transform: none;
+  }
+}

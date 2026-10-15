@@ -54,9 +54,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col md:flex-row">
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col md:flex-row up-card">
       {/* Left / Top: Photo Carousel Stage */}
-      <div className="md:w-5/12 lg:w-4/12 relative h-64 md:h-auto min-h-[260px] bg-gray-900 shrink-0 group">
+      <div className="md:w-5/12 lg:w-4/12 relative h-64 md:h-auto min-h-[260px] bg-gray-900 shrink-0 group up-media">
         <img
           src={room.images[activeImageIdx]}
           alt={room.name}
@@ -231,14 +231,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSelectedRoomForDetails(room)}
-              className="px-3.5 py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              className="px-3.5 py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer up-btn"
             >
               View Details
             </button>
 
             <button
               onClick={() => setSelectedRoomForBooking(room)}
-              className="px-5 py-2.5 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2.5 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer up-btn"
             >
               <span>Click to Book</span>
               <ArrowRight className="w-3.5 h-3.5" />

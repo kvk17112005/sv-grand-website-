@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { Booking, BookingStatus } from '../../types/hotel';
+import { Booking, BookingStatus, isPaymentSettled, getPaymentStatusLabel } from '../../types/hotel';
 import {
   Search,
   Filter,
@@ -173,16 +173,16 @@ export const BookingsManager: React.FC = () => {
                     <td className="p-3.5">
                       <div className="font-black text-gray-900">{formatCurrency(b.totalAmount)}</div>
                       <div className="flex items-center gap-1 text-[10px] mt-0.5">
-                        {b.paymentStatus === 'paid' ? (
+                        {isPaymentSettled(b.paymentStatus) ? (
                           <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
-                            Paid
+                            {getPaymentStatusLabel(b.paymentStatus)}
                           </span>
                         ) : (
                           <button
                             onClick={() => updateBookingPaymentStatus(b.id, 'paid')}
                             className="text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded cursor-pointer"
                           >
-                            Collect Cash/Card
+                            {getPaymentStatusLabel(b.paymentStatus)} &middot; Collect Cash/Card
                           </button>
                         )}
                         <span className="text-gray-400 capitalize">({b.paymentMethod.replace('_', ' ')})</span>

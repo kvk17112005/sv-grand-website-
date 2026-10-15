@@ -44,12 +44,12 @@ export const AmenitiesSection: React.FC = () => {
   ];
 
   return (
-    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+    <section className="my-10 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs up-section">
       <div className="mb-6">
         <span className="text-xs font-bold text-[#a67c32] uppercase tracking-wider">
           Hotel Facilities & Comforts
         </span>
-        <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5">
+        <h3 className="text-xl font-extrabold text-gray-900 tracking-tight mt-0.5 up-title-accent">
           Amenities at SV Grand Luxury Rooms
         </h3>
         <p className="text-xs text-gray-500 mt-1">
@@ -61,9 +61,9 @@ export const AmenitiesSection: React.FC = () => {
         {hotelAmenities.map((amenity, idx) => (
           <div
             key={idx}
-            className="p-4 rounded-xl bg-gray-50/70 border border-gray-100 hover:border-gray-200 transition-colors"
+            className="p-4 rounded-xl bg-gray-50/70 border border-gray-100 hover:border-gray-200 transition-colors up-card up-icon-parent"
           >
-            <div className="p-2.5 rounded-lg bg-white shadow-xs w-fit mb-3">
+            <div className="p-2.5 rounded-lg bg-white shadow-xs w-fit mb-3 up-icon-badge">
               {amenity.icon}
             </div>
             <h4 className="text-sm font-bold text-gray-900">{amenity.title}</h4>

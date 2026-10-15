@@ -47,7 +47,7 @@ export const HotelHero: React.FC = () => {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight up-title-accent">
               {hotel.name}
             </h1>
 
@@ -67,7 +67,7 @@ export const HotelHero: React.FC = () => {
           {/* Right Action Icons & Rating Block */}
           <div className="flex items-center justify-between lg:justify-end gap-4 shrink-0">
             {/* Rating badge */}
-            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-2xl">
+            <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-2xl up-glow">
               <div className="flex items-center gap-1 bg-emerald-600 text-white font-black text-base px-2.5 py-1 rounded-xl shadow-xs">
                 <span>{hotel.rating}</span>
                 <Star className="w-4 h-4 fill-white" />
@@ -84,7 +84,7 @@ export const HotelHero: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleShare}
-                className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-700 transition-colors"
+                className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-700 transition-colors up-btn"
                 title="Share Hotel"
               >
                 <Share2 className="w-4 h-4" />
@@ -97,7 +97,7 @@ export const HotelHero: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-2xl overflow-hidden shadow-sm relative">
           {/* Main big hero photo */}
           <div
-            className="md:col-span-2 h-72 md:h-96 relative group cursor-pointer overflow-hidden"
+            className="md:col-span-2 h-72 md:h-96 relative group cursor-pointer overflow-hidden up-media"
             onClick={() => setIsGalleryOpen(true)}
           >
             <img
@@ -119,7 +119,7 @@ export const HotelHero: React.FC = () => {
           {/* 2nd column: 2 stacked photos */}
           <div className="hidden md:flex flex-col gap-3 h-96">
             <div
-              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg"
+              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg up-media"
               onClick={() => setIsGalleryOpen(true)}
             >
               <img
@@ -134,7 +134,7 @@ export const HotelHero: React.FC = () => {
             </div>
 
             <div
-              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg"
+              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg up-media"
               onClick={() => setIsGalleryOpen(true)}
             >
               <img
@@ -152,7 +152,7 @@ export const HotelHero: React.FC = () => {
           {/* 3rd column: 2 stacked photos with View All overlay */}
           <div className="hidden md:flex flex-col gap-3 h-96">
             <div
-              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg"
+              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg up-media"
               onClick={() => setIsGalleryOpen(true)}
             >
               <img
@@ -166,7 +166,7 @@ export const HotelHero: React.FC = () => {
             </div>
 
             <div
-              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg"
+              className="h-1/2 relative group cursor-pointer overflow-hidden rounded-lg up-media"
               onClick={() => setIsGalleryOpen(true)}
             >
               <img
@@ -193,32 +193,32 @@ export const HotelHero: React.FC = () => {
 
         {/* Quick Highlights Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
-          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs">
-            <Clock className="w-4 h-4 text-[#a67c32] shrink-0" />
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs up-card up-icon-parent">
+            <Clock className="w-4 h-4 text-[#a67c32] shrink-0 up-icon-badge rounded-md" />
             <div>
               <div className="font-bold text-gray-900">Check-in: {hotel.checkInTime}</div>
               <div className="text-[11px] text-gray-500">Check-out: {hotel.checkOutTime}</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs">
-            <Wifi className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs up-card up-icon-parent">
+            <Wifi className="w-4 h-4 text-emerald-600 shrink-0 up-icon-badge rounded-md" />
             <div>
               <div className="font-bold text-gray-900">Free 5G Wi-Fi</div>
               <div className="text-[11px] text-gray-500">High speed across all floors</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs">
-            <BedDouble className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs up-card up-icon-parent">
+            <BedDouble className="w-4 h-4 text-amber-600 shrink-0 up-icon-badge rounded-md" />
             <div>
               <div className="font-bold text-gray-900">Room Options</div>
               <div className="text-[11px] text-gray-500">Single and double rooms</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs">
-            <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-xs up-card up-icon-parent">
+            <CheckCircle className="w-4 h-4 text-blue-600 shrink-0 up-icon-badge rounded-md" />
             <div>
               <div className="font-bold text-gray-900">Pay At Hotel Available</div>
               <div className="text-[11px] text-gray-500">Or pay online with extra perks</div>

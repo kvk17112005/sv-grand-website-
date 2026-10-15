@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../context/useAuth";
 import { apiRequest } from "../services/api";
 import { Eye, EyeOff } from "lucide-react";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import "./Profile.css";
 
 function formatMembershipDate(dateString) {
@@ -60,6 +61,8 @@ function getBookingCounts(bookings) {
 function Profile() {
   const { user, updateProfile, changePassword, signOut } = useAuth();
   const navigate = useNavigate();
+
+  useScrollReveal();
 
   // Personal details state
   const [name, setName] = useState(user?.name || user?.fullName || "");
@@ -190,15 +193,15 @@ function Profile() {
   return (
     <main className="profile-page">
       <section className="profile-heading">
-        <p className="section-label">SV GRAND LUXURY ROOMS</p>
-        <h1>Guest Profile</h1>
-        <p>Manage your personal information, contact credentials, and reservation preferences.</p>
+        <p className="section-label" data-reveal="fade">SV GRAND LUXURY ROOMS</p>
+        <h1 data-reveal>Guest Profile</h1>
+        <p data-reveal>Manage your personal information, contact credentials, and reservation preferences.</p>
       </section>
 
       <div className="profile-layout">
         {/* SIDEBAR IDENTITY CARD */}
         <aside className="profile-sidebar">
-          <div className="profile-card profile-badge-card">
+          <div className="profile-card profile-badge-card" data-reveal="left">
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">{initials}</div>
               <div className="profile-verified-badge" title="Verified Account">
@@ -237,7 +240,7 @@ function Profile() {
           </div>
 
           {/* QUICK SHORTCUTS */}
-          <div className="profile-card profile-shortcuts">
+          <div className="profile-card profile-shortcuts" data-reveal="left">
             <p className="profile-shortcuts-title">Quick Actions</p>
 
             <Link to="/my-bookings" className="profile-shortcut-link">
@@ -268,7 +271,7 @@ function Profile() {
         {/* MAIN EDITABLE SECTIONS */}
         <section className="profile-main-content">
           {/* PERSONAL DETAILS CARD */}
-          <div className="profile-card">
+          <div className="profile-card" data-reveal="up">
             <div className="profile-card-header">
               <div className="profile-card-header-left">
                 <div className="profile-card-icon">
@@ -368,7 +371,7 @@ function Profile() {
           </div>
 
           {/* ACCOUNT SECURITY CARD */}
-          <div className="profile-card">
+          <div className="profile-card" data-reveal="up">
             <div className="profile-card-header">
               <div className="profile-card-header-left">
                 <div className="profile-card-icon">
@@ -488,7 +491,7 @@ function Profile() {
           </div>
 
           {/* GUEST PRIVILEGES & CONCIERGE CARD */}
-          <div className="profile-card">
+          <div className="profile-card" data-reveal="up">
             <div className="profile-card-header">
               <div className="profile-card-header-left">
                 <div className="profile-card-icon">
@@ -502,7 +505,7 @@ function Profile() {
             </div>
 
             <div className="profile-perks-grid">
-              <div className="profile-perk-item">
+              <div className="profile-perk-item" data-reveal="zoom">
                 <div className="profile-perk-icon">
                   <FaWifi />
                 </div>
@@ -510,7 +513,7 @@ function Profile() {
                 <p>Complimentary fiber Wi-Fi throughout hotel rooms & lobby.</p>
               </div>
 
-              <div className="profile-perk-item">
+              <div className="profile-perk-item" data-reveal="zoom">
                 <div className="profile-perk-icon">
                   <FaConciergeBell />
                 </div>
@@ -518,7 +521,7 @@ function Profile() {
                 <p>Round-the-clock check-in support, luggage assistance & concierge.</p>
               </div>
 
-              <div className="profile-perk-item">
+              <div className="profile-perk-item" data-reveal="zoom">
                 <div className="profile-perk-icon">
                   <FaCalendarAlt />
                 </div>
@@ -551,7 +554,7 @@ function Profile() {
       </div>
 
       {/* FOOTER SESSION ROW */}
-      <div className="profile-footer-bar">
+      <div className="profile-footer-bar" data-reveal="fade">
         <span>Signed in as <strong>{user?.email}</strong></span>
         <button
           type="button"

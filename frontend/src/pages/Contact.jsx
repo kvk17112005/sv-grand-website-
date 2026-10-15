@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Clock3, MapPin, MessageCircle, Phone } from "lucide-react";
 import hotelFront from "../assets/hotel/hotel-front.jpg";
 import reception from "../assets/hotel/reception.jpg";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import "./Contact.css";
 
 const phoneNumber = "9885449702";
@@ -10,35 +11,40 @@ const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${enco
 const mapEmbedUrl = "https://www.openstreetmap.org/export/embed.html?bbox=78.003%2C14.906%2C78.016%2C14.913&layer=mapnik&marker=14.9094017%2C78.0093965";
 
 function Contact() {
+  useScrollReveal();
+
   return (
     <main className="contact-page">
       <section className="contact-hero">
-        <div className="contact-hero-photo">
-          <img src={hotelFront} alt="SV GRAND in Tadipatri" />
-          <span className="contact-photo-tag"><MapPin size={15} /> Gandhi Katta, Tadipatri</span>
+        <div className="contact-hero-photo" data-reveal="left">
+          <div className="contact-hero-photo-inner">
+            <img src={hotelFront} alt="SV GRAND in Tadipatri" />
+            <span className="contact-hero-sheen" aria-hidden="true" />
+            <span className="contact-photo-tag"><MapPin size={15} /> Gandhi Katta, Tadipatri</span>
+          </div>
         </div>
         <div className="contact-hero-copy">
-          <span className="contact-kicker"><span /> We’re just a message away</span>
-          <h1>Let’s make your<br /><em>stay easy.</em></h1>
-          <p>
+          <span className="contact-kicker" data-reveal="fade"><span /> We’re just a message away</span>
+          <h1 data-reveal>Let’s make your<br /><em>stay easy.</em></h1>
+          <p data-reveal>
             Questions about a room or planning your visit? Get in touch with
             our team. We’ll be glad to help you find your way to SV GRAND.
           </p>
-          <a href="#contact-options" className="contact-scroll-link">
+          <a href="#contact-options" className="contact-scroll-link" data-reveal="fade">
             Get in touch <ArrowDownRight size={17} />
           </a>
-          <span className="contact-hero-note"><Clock3 size={15} /> Here to help with your stay</span>
+          <span className="contact-hero-note" data-reveal="fade"><Clock3 size={15} /> Here to help with your stay</span>
         </div>
       </section>
 
       <section className="contact-content" id="contact-options">
-        <div className="contact-section-heading">
+        <div className="contact-section-heading" data-reveal>
           <span className="contact-kicker"><span /> Reach out your way</span>
           <h2>A real person is ready to help.</h2>
         </div>
 
         <div className="contact-options">
-          <article className="contact-option-card contact-call-card">
+          <article className="contact-option-card contact-call-card" data-reveal="up">
             <div className="contact-option-photo">
               <img src={hotelFront} alt="" loading="lazy" />
               <span className="contact-option-icon"><Phone size={21} /></span>
@@ -52,7 +58,7 @@ function Contact() {
               </a>
             </div>
           </article>
-          <article className="contact-option-card contact-whatsapp-card">
+          <article className="contact-option-card contact-whatsapp-card" data-reveal="up">
             <div className="contact-option-photo">
               <img src={reception} alt="" loading="lazy" />
               <span className="contact-option-icon"><MessageCircle size={21} /></span>
@@ -70,7 +76,7 @@ function Contact() {
       </section>
 
       <section className="contact-location-section">
-        <div className="contact-location-copy">
+        <div className="contact-location-copy" data-reveal="left">
           <span className="contact-kicker"><span /> Find us in Tadipatri</span>
           <h2>Close to where you need to be.</h2>
           <p className="contact-location-description">
@@ -88,7 +94,7 @@ function Contact() {
             See our Google listing <ArrowUpRight size={14} />
           </a>
         </div>
-        <div className="contact-map-frame">
+        <div className="contact-map-frame" data-reveal="right">
           <iframe
             title="Map showing SV GRAND in Tadipatri"
             src={mapEmbedUrl}
@@ -101,18 +107,18 @@ function Contact() {
       </section>
 
       <section className="contact-arrival">
-        <div className="contact-arrival-heading">
+        <div className="contact-arrival-heading" data-reveal>
           <span className="contact-kicker"><span /> Arriving by public transport?</span>
           <h2>Getting here is straightforward.</h2>
           <p>Use these nearby transit points to plan the last part of your journey.</p>
         </div>
         <div className="contact-transit-list">
-          <div className="contact-transit-item">
+          <div className="contact-transit-item" data-reveal="up">
             <span className="contact-transit-number">01</span>
             <div><strong>Tadipatri Railway Station</strong><span>About 400 m · 5 min walk</span></div>
             <ArrowUpRight size={17} />
           </div>
-          <div className="contact-transit-item">
+          <div className="contact-transit-item" data-reveal="up">
             <span className="contact-transit-number">02</span>
             <div><strong>APSRTC Bus Complex</strong><span>About 350 m · 4 min walk</span></div>
             <ArrowUpRight size={17} />

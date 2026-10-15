@@ -245,6 +245,58 @@ img {
 
   align-items: center;
 }
+
+/* =========================================
+   FIRST VISIT LANDING VIDEO
+========================================= */
+
+.landing-video-screen {
+  position: fixed;
+
+  inset: 0;
+
+  width: 100vw;
+  height: 100vh;
+
+  background: #000;
+
+  overflow: hidden;
+
+  z-index: 999999;
+}
+
+.landing-video {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  object-position: center;
+
+  display: block;
+
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.landing-video-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(0, 0, 0, 0.1),
+      rgba(0, 0, 0, 0.55)
+    );
+}
+
 /* =========================================
    SV GRAND OPENING ANIMATION
 ========================================= */
@@ -648,7 +700,6 @@ img {
 }
 
 
-.hero-section,
 .intro-section,
 .experience-section,
 .home-cta {
@@ -4774,6 +4825,12 @@ img {
   object-position: center center;
 
   display: block;
+
+  /* Promote the looping video to its own GPU layer so scrolling it
+     does not force continuous main-thread re-rasterization (scroll jank). */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 
@@ -6860,4 +6917,680 @@ body.dark-mode .theme-toggle-button:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 20px 14px;
   }
+}
+
+/* =====================================================
+   SCROLL REVEAL
+   Elements tagged with [data-reveal] animate into view
+   the first time they enter the viewport. The hook adds
+   .is-revealed, then [data-reveal-done] once finished so
+   normal (hover) styles take over again.
+===================================================== */
+body [data-reveal]:not([data-reveal-done]) {
+  opacity: 0;
+  transform: translateY(46px);
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+body [data-reveal="up"]:not([data-reveal-done]) {
+  transform: translateY(46px);
+}
+
+body [data-reveal="down"]:not([data-reveal-done]) {
+  transform: translateY(-46px);
+}
+
+body [data-reveal="left"]:not([data-reveal-done]) {
+  transform: translateX(-64px);
+}
+
+body [data-reveal="right"]:not([data-reveal-done]) {
+  transform: translateX(64px);
+}
+
+body [data-reveal="zoom"]:not([data-reveal-done]) {
+  transform: scale(0.9);
+}
+
+body [data-reveal="fade"]:not([data-reveal-done]) {
+  transform: none;
+}
+
+body [data-reveal].is-revealed:not([data-reveal-done]) {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body [data-reveal]:not([data-reveal-done]) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Keep slide-in reveals from creating a horizontal scrollbar */
+.about-page,
+.contact-page,
+.rooms-page-wrap,
+.room-details-page {
+  overflow-x: clip;
+}
+
+/* =====================================================
+   MICRO-INTERACTIONS
+===================================================== */
+
+/* Gold shimmer sweep across primary call-to-action buttons */
+.hero-button,
+.gold-button,
+.nav-book-btn,
+.home-btn-book,
+.owner-btn-book,
+.btn-book-suite,
+.contact-directions-button,
+.about-primary-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-button::after,
+.gold-button::after,
+.nav-book-btn::after,
+.home-btn-book::after,
+.owner-btn-book::after,
+.btn-book-suite::after,
+.contact-directions-button::after,
+.about-primary-link::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -140%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.65s ease;
+  pointer-events: none;
+}
+
+.hero-button:hover::after,
+.gold-button:hover::after,
+.nav-book-btn:hover::after,
+.home-btn-book:hover::after,
+.owner-btn-book:hover::after,
+.btn-book-suite:hover::after,
+.contact-directions-button:hover::after,
+.about-primary-link:hover::after {
+  left: 150%;
+}
+
+/* Gentle float for decorative badges */
+@keyframes svRevealFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.about-floating-badge {
+  animation: svRevealFloat 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-floating-badge {
+    animation: none;
+  }
+
+  .hero-button::after,
+  .gold-button::after,
+  .nav-book-btn::after,
+  .home-btn-book::after,
+  .owner-btn-book::after,
+  .btn-book-suite::after,
+  .contact-directions-button::after,
+  .about-primary-link::after {
+    display: none;
+  }
+}
+
+/* Rotate amenity icons on card hover */
+.highlight-icon-circle svg {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.highlight-card:hover .highlight-icon-circle svg {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* =====================================================
+   DARK MODE — PAGES WITHOUT A DEDICATED THEME
+   (booking, confirmation, room details, terms,
+   login/register, my bookings)
+===================================================== */
+
+body.dark-mode .booking-page,
+body.dark-mode .confirmation-page,
+body.dark-mode .room-details-page,
+body.dark-mode .terms-page,
+body.dark-mode .login-page,
+body.dark-mode .not-found-page {
+  background: #141414;
+  color: #ececec;
+}
+
+body.dark-mode .booking-header h1,
+body.dark-mode .booking-form h2,
+body.dark-mode .booking-summary h2,
+body.dark-mode .confirmation-header h1,
+body.dark-mode .confirmation-card-heading h2,
+body.dark-mode .confirmation-summary h2,
+body.dark-mode .room-details-content h1,
+body.dark-mode .room-details-content h3,
+body.dark-mode .terms-header h1,
+body.dark-mode .terms-intro h2,
+body.dark-mode .login-header h1 {
+  color: #f4f4f4;
+}
+
+body.dark-mode .booking-header > p:last-child,
+body.dark-mode .confirmation-header > p:last-child,
+body.dark-mode .detail-description,
+body.dark-mode .detail-price span,
+body.dark-mode .facilities-list,
+body.dark-mode .terms-header > p:last-child,
+body.dark-mode .terms-intro p,
+body.dark-mode .login-header p:last-child,
+body.dark-mode .login-register p {
+  color: #a3a39c;
+}
+
+body.dark-mode .booking-form,
+body.dark-mode .booking-summary,
+body.dark-mode .confirmation-card,
+body.dark-mode .confirmation-summary,
+body.dark-mode .room-details,
+body.dark-mode .terms-card,
+body.dark-mode .login-card {
+  background: #1c1c1c;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.45);
+}
+
+body.dark-mode .form-group label,
+body.dark-mode .login-field label {
+  color: #cfcfc8;
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group select,
+body.dark-mode .login-field input {
+  background: #242424;
+  border-color: #3a3a3a;
+  color: #eeeeee;
+}
+
+body.dark-mode .form-group input:focus,
+body.dark-mode .form-group select:focus,
+body.dark-mode .login-field input:focus {
+  border-color: #c49a58;
+}
+
+body.dark-mode .summary-price,
+body.dark-mode .summary-line,
+body.dark-mode .confirmation-price,
+body.dark-mode .confirmation-detail,
+body.dark-mode .confirmation-card-heading,
+body.dark-mode .facilities-list li,
+body.dark-mode .term-item,
+body.dark-mode .terms-intro {
+  border-color: #34342e;
+}
+
+body.dark-mode .summary-line,
+body.dark-mode .summary-price span {
+  color: #a3a39c;
+}
+
+body.dark-mode .summary-line strong {
+  color: #ececec;
+}
+
+body.dark-mode .confirmation-card-heading p,
+body.dark-mode .confirmation-detail span {
+  color: #8f9089;
+}
+
+body.dark-mode .confirmation-detail strong {
+  color: #eaeaea;
+}
+
+body.dark-mode .password-toggle-btn {
+  color: #9a9a9a;
+}
+
+body.dark-mode .password-toggle-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .login-options label {
+  color: #a3a39c;
+}
+
+body.dark-mode .login-divider {
+  color: #6f7069;
+}
+
+body.dark-mode .login-divider::before,
+body.dark-mode .login-divider::after {
+  background: #3a3a3a;
+}
+
+body.dark-mode .back-btn {
+  border-color: #4a4a42;
+  color: #dcb476;
+}
+
+body.dark-mode .back-btn:hover {
+  background: #262626;
+}
+
+body.dark-mode .my-bookings-page {
+  background: #141414;
+  color: #ececec;
+}
+
+body.dark-mode .my-bookings-summary > div,
+body.dark-mode .my-booking-card,
+body.dark-mode .no-bookings {
+  background: #1c1c1c;
+  border-color: #34342e;
+}
+
+body.dark-mode .my-bookings-summary span,
+body.dark-mode .my-booking-details span,
+body.dark-mode .expired-note {
+  color: #a3a39c;
+}
+
+body.dark-mode .my-booking-details strong {
+  color: #eaeaea;
+}
+
+body.dark-mode .my-booking-top {
+  border-color: #34342e;
+}
+
+/* Tailwind-utility pages (User Panel, admin, modals) */
+body.dark-mode .bg-white {
+  background-color: #1c1c1c !important;
+}
+
+body.dark-mode .bg-gray-50,
+body.dark-mode .bg-slate-50 {
+  background-color: #141414 !important;
+}
+
+body.dark-mode .bg-gray-100 {
+  background-color: #1a1a1a !important;
+}
+
+body.dark-mode .bg-gray-200 {
+  background-color: #262626 !important;
+}
+
+body.dark-mode .text-gray-900,
+body.dark-mode .text-gray-800,
+body.dark-mode .text-slate-900 {
+  color: #f4f4f4 !important;
+}
+
+body.dark-mode .text-gray-700,
+body.dark-mode .text-gray-600 {
+  color: #c7c7c0 !important;
+}
+
+body.dark-mode .text-gray-500,
+body.dark-mode .text-gray-400 {
+  color: #a3a39c !important;
+}
+
+body.dark-mode .text-black {
+  color: #f4f4f4 !important;
+}
+
+body.dark-mode .border-gray-200,
+body.dark-mode .border-gray-300 {
+  border-color: #34342e !important;
+}
+
+body.dark-mode .bg-amber-50 {
+  background-color: #2a2416 !important;
+}
+
+body.dark-mode .text-amber-900 {
+  color: #f0d9a8 !important;
+}
+
+/* =====================================================
+   POST-LOGIN PAGE ENTRANCE ANIMATIONS
+===================================================== */
+@keyframes pageRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.booking-page .booking-container,
+.confirmation-page .confirmation-container,
+.room-details-page .room-details,
+.terms-page .terms-container,
+.login-page .login-container {
+  animation: pageRiseIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booking-page .booking-container,
+  .confirmation-page .confirmation-container,
+  .room-details-page .room-details,
+  .terms-page .terms-container,
+  .login-page .login-container {
+    animation: none;
+  }
+}
+
+/* =====================================================
+   POST-LOGIN MICRO-INTERACTIONS
+===================================================== */
+
+/* Booking form section numbers */
+.booking-form-heading > span {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), background 300ms ease;
+}
+
+.booking-form-heading:hover > span {
+  transform: scale(1.08);
+}
+
+/* Booking / summary cards lift */
+.booking-form,
+.booking-summary,
+.confirmation-card,
+.confirmation-summary {
+  transition: box-shadow 260ms ease, transform 260ms ease, border-color 260ms ease;
+}
+
+.booking-summary:hover,
+.confirmation-summary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+}
+
+.confirmation-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.1);
+}
+
+/* Total highlight pulse */
+.summary-total strong,
+.confirmation-total strong {
+  transition: transform 260ms ease;
+}
+
+.summary-total:hover strong,
+.confirmation-total:hover strong {
+  transform: scale(1.06);
+}
+
+/* Confirm button sheen */
+.confirm-booking-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.confirm-booking-btn::after {
+  position: absolute;
+  top: 0;
+  left: -140%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  content: "";
+  transform: skewX(-20deg);
+  transition: left 0.7s ease;
+  pointer-events: none;
+}
+
+.confirm-booking-btn:hover:not(:disabled)::after {
+  left: 150%;
+}
+
+/* Success icon pulse + pop */
+.confirmation-success-icon,
+.confirmation-empty-icon {
+  animation: confirmIconPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both,
+    confirmIconRing 2.6s ease-out 0.6s infinite;
+}
+
+@keyframes confirmIconPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes confirmIconRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(162, 123, 63, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(162, 123, 63, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(162, 123, 63, 0);
+  }
+}
+
+/* Booking ID card shimmer accent */
+.booking-id-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.booking-id-card::after {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(195, 154, 91, 0.18), transparent);
+  content: "";
+  transform: skewX(-18deg);
+  animation: bookingIdSweep 6s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+
+@keyframes bookingIdSweep {
+  0% {
+    left: -60%;
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  55% {
+    left: 130%;
+    opacity: 0;
+  }
+  100% {
+    left: 130%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmation-success-icon,
+  .confirmation-empty-icon,
+  .booking-id-card::after {
+    animation: none;
+  }
+
+  .booking-form-heading > span,
+  .booking-form,
+  .booking-summary,
+  .confirmation-card,
+  .confirmation-summary,
+  .summary-total strong,
+  .confirmation-total strong {
+    transition: none;
+  }
+
+  .confirm-booking-btn::after {
+    display: none;
+  }
+
+  .booking-summary:hover,
+  .confirmation-summary:hover,
+  .confirmation-card:hover,
+  .booking-form-heading:hover > span,
+  .summary-total:hover strong,
+  .confirmation-total:hover strong {
+    transform: none;
+  }
+}
+
+/* =====================================================
+   TAILWIND "animate-in" ENTRANCE (plugin-free shim)
+   Provides modal / dropdown entrance motion for the
+   utility-class based pages (modals, portal sections).
+===================================================== */
+
+@keyframes svOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes svPanelIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-in.fade-in {
+  animation: svOverlayIn 0.3s ease-out both;
+}
+
+.animate-in.slide-in-from-bottom-2 {
+  animation: svPanelIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Panel inside a fixed overlay fades + scales in */
+.fixed.animate-in > div {
+  animation: svPanelIn 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in.fade-in,
+  .animate-in.slide-in-from-bottom-2,
+  .fixed.animate-in > div {
+    animation: none;
+  }
+}
+
+/* =====================================================
+   ACCOUNT PAGE DARK MODE
+===================================================== */
+body.dark-mode .account-page {
+  background: #171717;
+  color: #e6e6e6;
+}
+
+body.dark-mode .account-heading h1 {
+  color: #f2f2f2;
+}
+
+body.dark-mode .account-heading > p:last-child {
+  color: #a3a3a3;
+}
+
+body.dark-mode .account-card {
+  background: #1f1f1f;
+  border-color: #333;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .account-card-heading {
+  border-bottom-color: #333;
+}
+
+body.dark-mode .account-card-heading h2,
+body.dark-mode .account-section-heading h2 {
+  color: #f2f2f2;
+}
+
+body.dark-mode .account-form .login-field span {
+  color: #b0b0b0;
+}
+
+body.dark-mode .account-form .login-field input:read-only {
+  background: #262626;
+  color: #a3a3a3;
+}
+
+body.dark-mode .account-history-item,
+body.dark-mode .account-empty {
+  border-top-color: #333;
+}
+
+body.dark-mode .account-history-item span,
+body.dark-mode .account-empty {
+  color: #a3a3a3;
+}
+
+body.dark-mode .account-logout-row {
+  background: #1f1f1f;
+  border-color: #333;
+  color: #a3a3a3;
+}
+
+body.dark-mode .account-logout {
+  background: #281d1d;
+  border-color: #552727;
+  color: #e57373;
+}
+
+body.dark-mode .account-logout:hover {
+  background: #382222;
 }

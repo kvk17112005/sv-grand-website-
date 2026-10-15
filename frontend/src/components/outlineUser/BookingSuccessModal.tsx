@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useHotel } from '../../context/HotelContext';
+import { isPaymentSettled, getPaymentStatusLabel } from '../../types/hotel';
 import confetti from 'canvas-confetti';
 import {
   CheckCircle2,
@@ -44,7 +45,7 @@ export const BookingSuccessModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[92vh] up-banner">
         {/* Top Celebration Bar */}
         <div className="bg-gradient-to-r from-[#a67c32] to-[#7c5a1e] text-white p-5 text-center relative no-print">
           <button
@@ -54,7 +55,7 @@ export const BookingSuccessModal: React.FC = () => {
             <X className="w-5 h-5" />
           </button>
 
-          <div className="w-12 h-12 rounded-full bg-white text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-md">
+          <div className="w-12 h-12 rounded-full bg-white text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-md up-glow">
             <CheckCircle2 className="w-7 h-7" />
           </div>
           <h2 className="text-xl sm:text-2xl font-black">Booking Confirmed!</h2>
@@ -145,8 +146,8 @@ export const BookingSuccessModal: React.FC = () => {
               <div className="bg-white p-3 rounded-xl border border-gray-200 space-y-1 sm:text-right">
                 <div className="text-[10px] font-bold text-gray-400 uppercase">Total Amount</div>
                 <div className="text-xl font-black text-gray-900">{formatCurrency(b.totalAmount)}</div>
-                <div className="text-[11px] font-semibold text-emerald-700">
-                  Status: {b.paymentStatus === 'paid' ? 'Paid in Full' : 'Pay at Hotel on Check-in'}
+                <div className={`text-[11px] font-semibold ${isPaymentSettled(b.paymentStatus) ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  Status: {isPaymentSettled(b.paymentStatus) ? 'Paid in Full' : getPaymentStatusLabel(b.paymentStatus)}
                 </div>
                 <div className="text-[10px] text-gray-400 capitalize">
                   Via {b.paymentMethod.replace('_', ' ')}
@@ -186,7 +187,7 @@ export const BookingSuccessModal: React.FC = () => {
                 setLatestConfirmedBooking(null);
                 setIsMyBookingsOpen(true);
               }}
-              className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer up-btn"
             >
               <Luggage className="w-4 h-4 text-[#a67c32]" />
               <span>Go to My Bookings</span>

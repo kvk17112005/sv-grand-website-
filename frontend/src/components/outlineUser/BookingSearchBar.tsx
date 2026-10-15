@@ -95,7 +95,7 @@ export const BookingSearchBar: React.FC = () => {
                 setIsLocationPopoverOpen(!isLocationPopoverOpen);
                 setIsGuestPopoverOpen(false);
               }}
-              className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors text-left cursor-pointer"
+              className="w-full flex items-center justify-between gap-2.5 px-3.5 py-2.5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors text-left cursor-pointer up-btn"
               id="search-location-select-btn"
             >
               <div className="flex items-center gap-2.5 truncate">
@@ -117,7 +117,7 @@ export const BookingSearchBar: React.FC = () => {
 
             {/* Location Dropdown Modal */}
             {isLocationPopoverOpen && (
-              <div className="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-3.5 z-50 animate-in fade-in duration-150">
+              <div className="absolute left-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-3.5 z-50 animate-in fade-in duration-150 up-banner">
                 <div className="text-xs font-bold text-gray-900 mb-2 flex items-center justify-between">
                   <span>Select Hotel Location</span>
                   <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-1.5 py-0.5 rounded">
@@ -214,7 +214,7 @@ export const BookingSearchBar: React.FC = () => {
           <div className="relative lg:w-64 shrink-0">
             <button
               onClick={() => setIsGuestPopoverOpen(!isGuestPopoverOpen)}
-              className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors text-left cursor-pointer"
+              className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors text-left cursor-pointer up-btn"
               id="search-guests-rooms-btn"
             >
               <div className="flex items-center gap-2.5 truncate">
@@ -237,7 +237,7 @@ export const BookingSearchBar: React.FC = () => {
 
             {/* Dropdown Popover */}
             {isGuestPopoverOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 space-y-4 animate-in fade-in duration-150">
+              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 space-y-4 animate-in fade-in duration-150 up-banner">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-xs text-gray-900">Adults</div>
@@ -312,7 +312,7 @@ export const BookingSearchBar: React.FC = () => {
 
                 <button
                   onClick={() => setIsGuestPopoverOpen(false)}
-                  className="w-full py-2 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl mt-2 cursor-pointer transition-colors"
+                  className="w-full py-2 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl mt-2 cursor-pointer transition-colors up-btn"
                 >
                   Apply Guests
                 </button>
@@ -323,7 +323,7 @@ export const BookingSearchBar: React.FC = () => {
           {/* Quick Filter button toggle */}
           <button
             onClick={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
-            className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer up-tab ${
               searchState.amenitiesFilter.length > 0 || isFilterDrawerOpen
                 ? 'bg-amber-50 text-[#a67c32] border-[#a67c32]'
                 : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
@@ -351,7 +351,7 @@ export const BookingSearchBar: React.FC = () => {
                 onClick={() =>
                   setSearchState((prev) => ({ ...prev, selectedCategory: c.id }))
                 }
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer up-tab ${
                   searchState.selectedCategory === c.id
                     ? 'bg-[#1c1c1c] text-white shadow-xs'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -366,7 +366,7 @@ export const BookingSearchBar: React.FC = () => {
 
         {/* Expanded Amenities Filter Drawer */}
         {isFilterDrawerOpen && (
-          <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in duration-150">
+          <div className="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200 animate-in fade-in duration-150 up-banner">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                 Filter by Preferred Room Amenities:
@@ -388,7 +388,7 @@ export const BookingSearchBar: React.FC = () => {
                   <button
                     key={amenity}
                     onClick={() => toggleAmenity(amenity)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer up-tab ${
                       isSelected
                         ? 'bg-[#a67c32] text-white'
                         : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'

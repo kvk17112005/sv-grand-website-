@@ -11,9 +11,7 @@ import {
   ShieldCheck,
   Tag,
   Check,
-  CreditCard,
   QrCode,
-  Wallet,
   Building,
   ArrowRight,
   Sparkles,
@@ -32,7 +30,8 @@ export const BookingCheckoutModal: React.FC = () => {
     offers,
     addOns,
     formatCurrency,
-    createBooking,
+    registerExternalBooking,
+    setLatestConfirmedBooking,
     currentUser,
     showToast,
     selectedRoomNumberForBooking,
@@ -43,9 +42,9 @@ export const BookingCheckoutModal: React.FC = () => {
   const { user } = useAuth();
 
   // Form State
-  const [guestName, setGuestName] = useState(user?.name || user?.fullName || currentUser?.name || 'Krishna Varun');
-  const [guestEmail, setGuestEmail] = useState(user?.email || currentUser?.email || 'krishnakvarun8@gmail.com');
-  const [guestPhone, setGuestPhone] = useState(user?.phone || currentUser?.phone || '+91 98765 01234');
+  const [guestName, setGuestName] = useState(user?.name || user?.fullName || currentUser?.name || '');
+  const [guestEmail, setGuestEmail] = useState(user?.email || currentUser?.email || '');
+  const [guestPhone, setGuestPhone] = useState(user?.phone || currentUser?.phone || '');
 
   useEffect(() => {
     if (user) {
@@ -111,7 +110,6 @@ export const BookingCheckoutModal: React.FC = () => {
   }
 
   const netBeforeTax = Math.max(0, baseRoomTotal + addOnsTotal - discountAmount - wizardDiscount);
-  const taxAmount = 0;
   const grandTotal = netBeforeTax;
 
   const handleToggleAddOn = (id: string) => {
@@ -136,92 +134,65 @@ export const BookingCheckoutModal: React.FC = () => {
     }
   };
 
-  const handleConfirmReservation = (e: React.FormEvent) => {
+  const handleConfirmReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestName.trim() || !guestEmail.trim() || !guestPhone.trim()) {
       showToast('Please fill in all guest details');
       return;
     }
 
+    // Map the selected category to a backend room name.
+    let backendRoomName = 'Deluxe AC Room';
+    if (room.name.toLowerCase().includes('single')) {
+      backendRoomName = pricing.isAC ? 'AC Single Room' : 'Non-AC Single Room';
+    } else if (room.name.toLowerCase().includes('double')) {
+      backendRoomName = pricing.isAC ? 'AC Double Room' : 'Non-AC Double Room';
+    } else if (pricing.isAC) {
+      backendRoomName = 'Deluxe AC Room';
+    } else {
+      backendRoomName = 'Standard Non-AC Room';
+    }
+
     setIsProcessing(true);
-
-    setTimeout(() => {
-      setIsProcessing(false);
-      setSelectedRoomForBooking(null);
-
-      const newBooking = createBooking({
-        guestId: user?.id || currentUser?.id || `g-${Date.now()}`,
-        guestName,
-        guestEmail,
-        guestPhone,
-        roomTypeId: room.id,
-        roomTypeName: room.name,
-        assignedRoomNumber: pickedRoomNumber || undefined,
-        stayDuration: '24h',
-        checkInDate: searchState.checkInDate,
-        checkOutDate: searchState.checkOutDate,
-        nights: nightsCount,
-        roomsCount: searchState.roomsCount,
-        guestsCount: {
-          adults: searchState.adults,
-          children: searchState.children
-        },
-        twentyFourHourRate: pricing.twentyFourHourBase,
-        durationDiscountAmount: pricing.durationDiscountAmount,
-        baseAmount: baseRoomTotal,
-        discountAmount: discountAmount + wizardDiscount,
-        couponCode: appliedCoupon?.code,
-        addOns: chosenAddOnsList.map((a) => ({
-          id: a.id,
-          name: a.name,
-          price: a.perNight ? a.price * nightsCount * searchState.roomsCount : a.price
-        })),
-        taxAmount,
-        totalAmount: grandTotal,
-        paymentMethod,
-        paymentStatus: 'paid', // Completed payment generates confirmation code
-        approvalStatus: 'pending', // Awaiting Admin verification & approval
-        bookingStatus: 'confirmed',
-        specialRequests
-      });
-
-      // Synchronize booking to PostgreSQL database so it shows across all panels & My Bookings
-      let backendRoomName = "Deluxe AC Room";
-      if (room.name.toLowerCase().includes("single")) {
-        backendRoomName = pricing.isAC ? "AC Single Room" : "Non-AC Single Room";
-      } else if (room.name.toLowerCase().includes("double")) {
-        backendRoomName = pricing.isAC ? "AC Double Room" : "Non-AC Double Room";
-      } else if (pricing.isAC) {
-        backendRoomName = "Deluxe AC Room";
-      } else {
-        backendRoomName = "Standard Non-AC Room";
-      }
-
-      apiRequest('/api/bookings', {
+    try {
+      // The backend is the source of truth: it validates availability, prices
+      // the stay, holds inventory, and returns the canonical booking + reference.
+      const result = await apiRequest('/api/bookings', {
         method: 'POST',
         body: JSON.stringify({
-          bookingId: newBooking.id,
           roomName: backendRoomName,
-          name: guestName,
-          phone: guestPhone.replace(/[^0-9+]/g, '') || '9876543210',
-          email: guestEmail || user?.email || 'user@svgrand.com',
+          name: guestName.trim(),
+          phone: guestPhone.replace(/[^0-9+]/g, ''),
+          email: guestEmail.trim().toLowerCase(),
           checkIn: searchState.checkInDate,
           checkOut: searchState.checkOutDate,
           adults: Math.max(1, searchState.adults),
-          children: searchState.children,
           children13Plus: 0,
           childrenBelow13: searchState.children,
-          totalGuests: Math.max(1, searchState.adults + searchState.children)
+          totalGuests: Math.max(1, searchState.adults + searchState.children),
+          paymentMethod,
+          specialRequests: specialRequests.trim() || undefined
         })
-      }).catch((apiErr) => {
-        console.debug('PostgreSQL booking sync notice:', apiErr);
       });
-    }, 900);
+
+      if (!result?.booking) {
+        throw new Error('The booking service returned an invalid response.');
+      }
+
+      const registered = registerExternalBooking(result.booking);
+      setLatestConfirmedBooking(registered);
+      setSelectedRoomForBooking(null);
+      showToast(`🎉 Booking ${registered.bookingCode} received!`);
+    } catch (error: any) {
+      showToast(`❌ ${error?.message || 'Could not create the booking. Please try again.'}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[92vh]">
+      <div className="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[92vh] up-banner">
         {/* Header */}
         <div className="p-4 sm:px-6 border-b border-gray-100 flex items-center justify-between bg-gray-50 sticky top-0 z-10">
           <div className="flex items-center gap-2">
@@ -441,26 +412,14 @@ export const BookingCheckoutModal: React.FC = () => {
                   {
                     id: 'upi',
                     label: 'UPI (GPay / PhonePe / Paytm)',
-                    desc: 'Instant QR / UPI confirmation',
+                    desc: 'Pay via hotel UPI QR, then submit the UTR',
                     icon: <QrCode className="w-4 h-4 text-[#a67c32]" />
-                  },
-                  {
-                    id: 'credit_card',
-                    label: 'Credit / Debit Card',
-                    desc: 'Visa, Mastercard, RuPay',
-                    icon: <CreditCard className="w-4 h-4 text-blue-600" />
                   },
                   {
                     id: 'pay_at_hotel',
                     label: 'Pay at Hotel',
                     desc: 'Pay cash or card upon check-in',
                     icon: <Building className="w-4 h-4 text-emerald-600" />
-                  },
-                  {
-                    id: 'oyo_wallet',
-                    label: `OYO Money Wallet`,
-                    desc: `Balance: ₹${currentUser?.walletBalance || 0}`,
-                    icon: <Wallet className="w-4 h-4 text-amber-500" />
                   }
                 ].map((pm) => (
                   <button
@@ -596,7 +555,7 @@ export const BookingCheckoutModal: React.FC = () => {
               <button
                 onClick={handleConfirmReservation}
                 disabled={isProcessing}
-                className="w-full py-3.5 bg-[#a67c32] hover:bg-[#8e6826] disabled:bg-gray-400 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2"
+                className="w-full py-3.5 bg-[#a67c32] hover:bg-[#8e6826] disabled:bg-gray-400 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2 up-btn"
               >
                 {isProcessing ? (
                   <span>Securing your room...</span>

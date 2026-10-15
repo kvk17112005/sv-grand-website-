@@ -22,13 +22,13 @@ export const OffersSection: React.FC = () => {
 
   return (
     <section className="my-10">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 up-card-parent">
         <div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#a67c32] uppercase tracking-wider">
             <Tag className="w-3.5 h-3.5" />
             <span>Exclusive Savings & Offers</span>
           </div>
-          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+          <h3 className="text-xl font-extrabold text-gray-900 tracking-tight up-title-accent">
             Special Hotel Discounts & Promo Deals
           </h3>
         </div>
@@ -41,7 +41,7 @@ export const OffersSection: React.FC = () => {
         {activeOffers.map((offer) => (
           <div
             key={offer.id}
-            className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group"
+            className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group up-card up-icon-parent"
           >
             {/* Top decorative accent */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#a67c32] to-amber-500" />
@@ -53,7 +53,7 @@ export const OffersSection: React.FC = () => {
                   {offer.badge || 'Limited Time'}
                 </span>
                 <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Clock className="w-3 h-3 up-icon-badge rounded-md" />
                   <span>Till {offer.validUntil}</span>
                 </span>
               </div>
@@ -73,7 +73,7 @@ export const OffersSection: React.FC = () => {
 
               <button
                 onClick={() => handleCopy(offer.code)}
-                className="flex items-center gap-1 text-xs font-bold text-[#a67c32] hover:text-[#8e6826] transition-colors p-1.5 rounded-md hover:bg-amber-50 cursor-pointer"
+                className="flex items-center gap-1 text-xs font-bold text-[#a67c32] hover:text-[#8e6826] transition-colors p-1.5 rounded-md hover:bg-amber-50 cursor-pointer up-btn"
               >
                 {copiedCode === offer.code ? (
                   <>

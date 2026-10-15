@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function TermsAndConditions() {
   const { type } = useParams();
   const navigate = useNavigate();
   const [agreed, setAgreed] = useState(false);
+
+  useScrollReveal();
 
   const handleContinue = () => {
     if (!agreed) {
@@ -18,9 +21,9 @@ function TermsAndConditions() {
   return (
     <main className="terms-page">
       <section className="terms-header">
-        <p className="section-label">SV GRAND LUXURY ROOMS</p>
-        <h1>Terms & Conditions</h1>
-        <p>
+        <p className="section-label" data-reveal="fade">SV GRAND LUXURY ROOMS</p>
+        <h1 data-reveal>Terms & Conditions</h1>
+        <p data-reveal="fade">
           Please read the following terms and conditions
           carefully before proceeding with your booking.
         </p>
@@ -28,7 +31,7 @@ function TermsAndConditions() {
 
       <section className="terms-container">
         <div className="terms-card">
-          <div className="terms-intro">
+          <div className="terms-intro" data-reveal="up">
             <span className="terms-icon">✓</span>
             <div>
               <h2>Before You Continue</h2>
@@ -41,7 +44,7 @@ function TermsAndConditions() {
           </div>
 
           <div className="terms-list">
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>01</span>
               <div>
                 <h3>Booking Information</h3>
@@ -52,7 +55,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>02</span>
               <div>
                 <h3>Guest Identification</h3>
@@ -66,7 +69,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>03</span>
               <div>
                 <h3>Extra Guest Charges</h3>
@@ -80,7 +83,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>04</span>
               <div>
                 <h3>Room Occupancy</h3>
@@ -92,7 +95,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>05</span>
               <div>
                 <h3>Hotel Property</h3>
@@ -103,7 +106,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>06</span>
               <div>
                 <h3>Hotel Policies</h3>
@@ -115,7 +118,7 @@ function TermsAndConditions() {
               </div>
             </div>
 
-            <div className="term-item">
+            <div className="term-item" data-reveal="up">
               <span>07</span>
               <div>
                 <h3>Booking Confirmation</h3>
@@ -128,7 +131,7 @@ function TermsAndConditions() {
             </div>
           </div>
 
-          <div className="terms-agreement">
+          <div className="terms-agreement" data-reveal="up">
             <label className="agreement-checkbox">
               <input
                 type="checkbox"
@@ -143,7 +146,7 @@ function TermsAndConditions() {
             </label>
           </div>
 
-          <div className="terms-actions">
+          <div className="terms-actions" data-reveal="fade">
             <Link
               to={`/room/${type}`}
               className="terms-back-btn"

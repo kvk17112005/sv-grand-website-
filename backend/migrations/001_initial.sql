@@ -1,4 +1,5 @@
-BEGIN;
+-- 001_initial: base auth + booking tables. Applied via the migration runner,
+-- which provides the surrounding transaction and schema_migrations tracking.
 
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -58,9 +59,3 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   version text PRIMARY KEY,
   applied_at timestamptz NOT NULL DEFAULT now()
 );
-
-INSERT INTO schema_migrations (version)
-VALUES ('001_initial')
-ON CONFLICT (version) DO NOTHING;
-
-COMMIT;

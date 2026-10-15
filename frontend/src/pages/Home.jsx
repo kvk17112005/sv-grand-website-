@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FaStar,
@@ -18,6 +18,7 @@ import {
   FaHeart,
   FaArrowRight,
 } from "react-icons/fa";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import "./Home.css";
 
 const ROOMS_DATA = [
@@ -44,6 +45,65 @@ const ROOMS_DATA = [
     name: "Non-AC Single Room",
     category: "NON-AC ROOM",
     image: "/hotel/non-ac-room-1.jpg",
+  },
+];
+
+const AMENITIES_DATA = [
+  {
+    icon: FaSnowflake,
+    title: "Climate-Controlled AC",
+    desc: "High-efficiency split air-conditioners to ensure quick, silent, and refreshing cooling.",
+    image:
+      "https://images.unsplash.com/photo-1582239052618-4e2324cef034?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaBolt,
+    title: "24/7 Power Backup",
+    desc: "Dedicated industrial generator keeps ACs, lifts, lights, and sockets uninterrupted 24 hours.",
+    image:
+      "https://images.unsplash.com/photo-1509390144018-eeaf65052242?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaWater,
+    title: "24/7 Hot & Cold Water",
+    desc: "Instant geysers and constant water pressure for refreshing morning and night baths.",
+    image:
+      "https://images.unsplash.com/photo-1656646523409-46f291d67d2a?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaWifi,
+    title: "High-Speed Fiber Wi-Fi",
+    desc: "Complimentary enterprise-grade Wi-Fi across every room and reception for work and streaming.",
+    image:
+      "https://images.unsplash.com/photo-1750712263185-edde9f359e33?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaCar,
+    title: "Secure Gated Parking",
+    desc: "Spacious on-site car and bike parking with 24/7 CCTV surveillance and security guards.",
+    image:
+      "https://images.unsplash.com/photo-1587813369290-091c9d432daf?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaBed,
+    title: "Plush Spring Mattresses",
+    desc: "Orthopedic pocket-spring mattresses, crisp cotton bedsheets, and plush pillows for deep sleep.",
+    image:
+      "https://images.unsplash.com/photo-1772476361154-e894ba10d757?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaShieldAlt,
+    title: "Spotless Cleanliness",
+    desc: "Rigorous multi-point housekeeping protocols and daily sanitization of every room.",
+    image:
+      "https://images.unsplash.com/photo-1760722974657-f64bce2f9cc5?auto=format&fit=crop&w=800&q=70",
+  },
+  {
+    icon: FaConciergeBell,
+    title: "24/7 Concierge & Care",
+    desc: "Friendly reception desk ready 24/7 for wake-up calls, travel assistance, and room service.",
+    image:
+      "https://images.unsplash.com/photo-1759038085950-1234ca8f5fed?auto=format&fit=crop&w=800&q=70",
   },
 ];
 
@@ -130,10 +190,44 @@ function Home() {
     () => sessionStorage.getItem("svGrandLandingShown") !== "true"
   );
 
+  const heroSectionRef = useRef(null);
+  const heroVideoRef = useRef(null);
+
+  useScrollReveal();
+
   const handleVideoEnd = () => {
     sessionStorage.setItem("svGrandLandingShown", "true");
     setShowLandingVideo(false);
   };
+
+  /*
+    Pause the looping hero video while it is scrolled out of view.
+    A continuously playing full-screen video keeps decoding/compositing
+    and makes scrolling the rest of the page feel janky.
+  */
+  useEffect(() => {
+    const section = heroSectionRef.current;
+    const video = heroVideoRef.current;
+
+    if (!section || !video || !("IntersectionObserver" in window)) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.01 }
+    );
+
+    observer.observe(section);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <main className="home-container">
@@ -179,8 +273,9 @@ function Home() {
       {/* =========================================
           ORIGINAL STARTING MAIN HERO SECTION
       ========================================= */}
-      <section className="hero-section">
+      <section className="hero-section" ref={heroSectionRef}>
         <video
+          ref={heroVideoRef}
           className="hero-video"
           autoPlay
           muted
@@ -194,9 +289,9 @@ function Home() {
         <div className="hero-video-overlay" />
 
         <div className="hero-content">
-          <p className="hero-label">WELCOME TO</p>
+          <p className="hero-label" data-reveal="fade">WELCOME TO</p>
 
-          <h1>
+          <h1 data-reveal>
             SV GRAND
             <br />
             LUXURY
@@ -204,11 +299,11 @@ function Home() {
             ROOMS
           </h1>
 
-          <p className="hero-description">
+          <p className="hero-description" data-reveal="fade">
             Comfortable rooms, warm hospitality and a convenient stay in Tadipatri.
           </p>
 
-          <Link to="/rooms" className="hero-button">
+          <Link to="/rooms" className="hero-button" data-reveal="zoom">
             VIEW ROOMS
           </Link>
         </div>
@@ -219,11 +314,13 @@ function Home() {
       ========================================= */}
       <section id="about-hotel" className="home-about-section">
         <div className="home-about-grid">
-          <div className="home-about-images">
+          <div className="home-about-images" data-reveal="left">
             <img
               src="/hotel/reception.jpg"
               alt="SV Grand Reception & Front Desk"
               className="about-main-img"
+              loading="lazy"
+              decoding="async"
             />
             <div className="about-floating-badge">
               <strong>#1</strong>
@@ -232,28 +329,28 @@ function Home() {
           </div>
 
           <div className="home-about-text">
-            <div className="owner-welcome-badge">
+            <div className="owner-welcome-badge" data-reveal="fade">
               <FaAward /> FROM THE MANAGEMENT & OWNERS
             </div>
 
-            <h2>A Legacy of True Comfort & Rayalaseema Hospitality</h2>
+            <h2 data-reveal>A Legacy of True Comfort & Rayalaseema Hospitality</h2>
 
-            <p>
+            <p data-reveal>
               Welcome to <strong>SV Grand Luxury Rooms</strong>. As hotel owners, our passion was to build a sanctuary in Tadipatri where travelers never have to compromise on hygiene, comfort, or personalized care.
             </p>
 
-            <div className="owner-quote-box">
+            <div className="owner-quote-box" data-reveal="zoom">
               <p>
                 "At SV Grand, we treat every traveler not just as a customer, but as a revered guest in our home. Your restful sleep, safety, and satisfaction are our personal commitments."
               </p>
               <span>— The Management Team, SV Grand</span>
             </div>
 
-            <p>
+            <p data-reveal>
               Strategically located in central Tadipatri, our hotel is minutes away from the celebrated Bugga Ramalingeswara Swamy and Chintala Venkataramana Swamy Temples, and within easy reach of Belum Caves and Gandikota.
             </p>
 
-            <div className="about-features-checks">
+            <div className="about-features-checks" data-reveal>
               <div><FaCheckCircle /> 100% Sanitized & Clean Linens</div>
               <div><FaCheckCircle /> Pure Spring RO Water Included</div>
               <div><FaCheckCircle /> High-Speed Fiber Wi-Fi</div>
@@ -262,7 +359,7 @@ function Home() {
               <div><FaCheckCircle /> In-Room Dining & Room Service</div>
             </div>
 
-            <div>
+            <div data-reveal>
               <Link to="/about" className="hero-btn-primary" style={{ padding: "12px 26px" }}>
                 LEARN MORE ABOUT US <FaArrowRight size={12} />
               </Link>
@@ -276,77 +373,39 @@ function Home() {
       ========================================= */}
       <section className="home-highlights-section">
         <div className="section-header-center">
-          <p className="section-label-gold">WHY CHOOSE SV GRAND</p>
-          <h2 className="section-main-title">Highlighted Amenities & Features</h2>
-          <p className="section-subtitle-text">
+          <p className="section-label-gold" data-reveal="fade">WHY CHOOSE SV GRAND</p>
+          <h2 className="section-main-title" data-reveal>Highlighted Amenities & Features</h2>
+          <p className="section-subtitle-text" data-reveal>
             Every feature at SV Grand is handpicked to provide you with an effortless, restful, and safe stay.
           </p>
         </div>
 
         <div className="highlights-grid">
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaSnowflake />
-            </div>
-            <h3>Climate-Controlled AC</h3>
-            <p>High-efficiency split air-conditioners to ensure quick, silent, and refreshing cooling.</p>
-          </div>
+          {AMENITIES_DATA.map((amenity) => {
+            const Icon = amenity.icon;
+            return (
+              <article className="highlight-card" data-reveal="up" key={amenity.title}>
+                <div className="highlight-media">
+                  <img
+                    src={amenity.image}
+                    alt={amenity.title}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span className="highlight-media-sheen" aria-hidden="true" />
+                </div>
 
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaBolt />
-            </div>
-            <h3>24/7 Power Backup</h3>
-            <p>Dedicated industrial generator keeps ACs, lifts, lights, and sockets uninterrupted 24 hours.</p>
-          </div>
+                <span className="highlight-icon-circle">
+                  <Icon />
+                </span>
 
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaWater />
-            </div>
-            <h3>24/7 Hot & Cold Water</h3>
-            <p>Instant geysers and constant water pressure for refreshing morning and night baths.</p>
-          </div>
-
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaWifi />
-            </div>
-            <h3>High-Speed Fiber Wi-Fi</h3>
-            <p>Complimentary enterprise-grade Wi-Fi across every room and reception for work and streaming.</p>
-          </div>
-
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaCar />
-            </div>
-            <h3>Secure Gated Parking</h3>
-            <p>Spacious on-site car and bike parking with 24/7 CCTV surveillance and security guards.</p>
-          </div>
-
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaBed />
-            </div>
-            <h3>Plush Spring Mattresses</h3>
-            <p>Orthopedic pocket-spring mattresses, crisp cotton bedsheets, and plush pillows for deep sleep.</p>
-          </div>
-
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaShieldAlt />
-            </div>
-            <h3>Spotless Cleanliness</h3>
-            <p>Rigorous multi-point housekeeping protocols and daily sanitization of every room.</p>
-          </div>
-
-          <div className="highlight-card">
-            <div className="highlight-icon-circle">
-              <FaConciergeBell />
-            </div>
-            <h3>24/7 Concierge & Care</h3>
-            <p>Friendly reception desk ready 24/7 for wake-up calls, travel assistance, and room service.</p>
-          </div>
+                <div className="highlight-card-body">
+                  <h3>{amenity.title}</h3>
+                  <p>{amenity.desc}</p>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -355,9 +414,9 @@ function Home() {
       ========================================= */}
       <section className="home-rooms-section">
         <div className="section-header-center">
-          <p className="section-label-gold">ACCOMMODATION COLLECTION</p>
-          <h2 className="section-main-title">Handcrafted Rooms for Every Need</h2>
-          <p className="section-subtitle-text">
+          <p className="section-label-gold" data-reveal="fade">ACCOMMODATION COLLECTION</p>
+          <h2 className="section-main-title" data-reveal>Handcrafted Rooms for Every Need</h2>
+          <p className="section-subtitle-text" data-reveal>
             Choose from our premium AC and non-AC rooms, each crafted with care for an elevated stay experience.
           </p>
         </div>
@@ -369,9 +428,10 @@ function Home() {
               <article
                 className={`home-suite-row ${isReversed ? "row-reversed" : ""}`}
                 key={room.type}
+                data-reveal={isReversed ? "right" : "left"}
               >
                 <div className="home-suite-media">
-                  <img src={room.image} alt={room.name} />
+                  <img src={room.image} alt={room.name} loading="lazy" decoding="async" />
                   <span className="home-suite-badge">{room.category}</span>
                 </div>
 
@@ -401,7 +461,7 @@ function Home() {
       ========================================= */}
       <section className="home-reviews-section">
         <div className="section-header-center">
-          <div className="reviews-summary-badge">
+          <div className="reviews-summary-badge" data-reveal="zoom">
             <div className="reviews-stars-wrap">
               <FaStar /> <FaStar /> <FaStar /> <FaStar /> <FaStar />
             </div>
@@ -409,38 +469,44 @@ function Home() {
             <span>(450+ Verified Guest Reviews)</span>
           </div>
 
-          <p className="section-label-gold">GUEST EXPERIENCES & REVIEWS</p>
-          <h2 className="section-main-title">What Our Cherished Guests Say</h2>
-          <p className="section-subtitle-text">
+          <p className="section-label-gold" data-reveal="fade">GUEST EXPERIENCES & REVIEWS</p>
+          <h2 className="section-main-title" data-reveal>What Our Cherished Guests Say</h2>
+          <p className="section-subtitle-text" data-reveal>
             Real feedback from pilgrims, corporate professionals, tourists, and families who made SV Grand their home in Tadipatri.
           </p>
         </div>
 
-        <div className="reviews-grid">
-          {REVIEWS_DATA.map((rev, index) => (
-            <article className="review-card" key={index}>
-              <div className="review-card-header">
-                <div className="review-stars">
-                  {[...Array(rev.rating)].map((_, i) => (
-                    <FaStar key={i} />
-                  ))}
+        <div className="reviews-marquee" data-reveal="fade">
+          <div className="reviews-track">
+            {[...REVIEWS_DATA, ...REVIEWS_DATA].map((rev, index) => (
+              <article
+                className="review-card"
+                key={index}
+                aria-hidden={index >= REVIEWS_DATA.length}
+              >
+                <div className="review-card-header">
+                  <div className="review-stars">
+                    {[...Array(rev.rating)].map((_, i) => (
+                      <FaStar key={i} />
+                    ))}
+                  </div>
+                  <span className="review-type-pill">{rev.type}</span>
                 </div>
-                <span className="review-type-pill">{rev.type}</span>
-              </div>
 
-              <p className="review-quote">"{rev.quote}"</p>
+                <p className="review-quote">"{rev.quote}"</p>
 
-              <div className="review-author-wrap">
-                <div className="review-avatar">
-                  {rev.author.slice(0, 1)}
+                <div className="review-author-wrap">
+                  <div className="review-avatar">
+                    {rev.author.slice(0, 1)}
+                  </div>
+                  <div className="review-author-info">
+                    <strong>{rev.author}</strong>
+                    <span>{rev.city}</span>
+                  </div>
                 </div>
-                <div className="review-author-info">
-                  <strong>{rev.author}</strong>
-                  <span>{rev.city}</span>
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -449,28 +515,28 @@ function Home() {
       ========================================= */}
       <section className="home-gallery-section">
         <div className="section-header-center">
-          <p className="section-label-gold">A VISUAL TOUR</p>
-          <h2 className="section-main-title">Experience the Ambiance</h2>
-          <p className="section-subtitle-text">
+          <p className="section-label-gold" data-reveal="fade">A VISUAL TOUR</p>
+          <h2 className="section-main-title" data-reveal>Experience the Ambiance</h2>
+          <p className="section-subtitle-text" data-reveal>
             Take a look inside our pristine property, corridors, and welcoming reception.
           </p>
         </div>
 
         <div className="gallery-grid">
-          <div className="gallery-item">
-            <img src="/hotel/hotel-front.jpg" alt="SV Grand Grand Entrance" />
+          <div className="gallery-item" data-reveal="zoom">
+            <img src="/hotel/hotel-front.jpg" alt="SV Grand Grand Entrance" loading="lazy" decoding="async" />
             <div className="gallery-caption">Hotel Entrance & Facade</div>
           </div>
-          <div className="gallery-item">
-            <img src="/hotel/reception.jpg" alt="SV Grand Reception Desk" />
+          <div className="gallery-item" data-reveal="zoom">
+            <img src="/hotel/reception.jpg" alt="SV Grand Reception Desk" loading="lazy" decoding="async" />
             <div className="gallery-caption">24/7 Front Desk & Lobby</div>
           </div>
-          <div className="gallery-item">
-            <img src="/hotel/corridor.jpg" alt="SV Grand Corridor" />
+          <div className="gallery-item" data-reveal="zoom">
+            <img src="/hotel/corridor.jpg" alt="SV Grand Corridor" loading="lazy" decoding="async" />
             <div className="gallery-caption">Quiet & Clean Corridors</div>
           </div>
-          <div className="gallery-item">
-            <img src="/hotel/double-bed-room.jpg" alt="SV Grand Deluxe Bedroom" />
+          <div className="gallery-item" data-reveal="zoom">
+            <img src="/hotel/double-bed-room.jpg" alt="SV Grand Deluxe Bedroom" loading="lazy" decoding="async" />
             <div className="gallery-caption">Plush Deluxe Bedrooms</div>
           </div>
         </div>
@@ -481,16 +547,16 @@ function Home() {
       ========================================= */}
       <section className="home-attractions-section">
         <div className="section-header-center">
-          <p className="section-label-gold">EXPLORE TADIPATRI</p>
-          <h2 className="section-main-title">Nearby Attractions & Temples</h2>
-          <p className="section-subtitle-text">
+          <p className="section-label-gold" data-reveal="fade">EXPLORE TADIPATRI</p>
+          <h2 className="section-main-title" data-reveal>Nearby Attractions & Temples</h2>
+          <p className="section-subtitle-text" data-reveal>
             SV Grand is the ideal base to explore famous historical temples, natural caves, and scenic landmarks.
           </p>
         </div>
 
         <div className="attractions-grid">
           {ATTRACTIONS_DATA.map((att, i) => (
-            <article className="attraction-card" key={i}>
+            <article className="attraction-card" key={i} data-reveal="up">
               <span className="attraction-tag">{att.category}</span>
               <h3>{att.name}</h3>
               <p>{att.desc}</p>
@@ -507,7 +573,7 @@ function Home() {
       ========================================= */}
       <section className="home-owner-promise-section">
         <div className="owner-promise-card">
-          <div className="owner-promise-left">
+          <div className="owner-promise-left" data-reveal="left">
             <p className="section-label-gold">THE OWNER'S GUARANTEE</p>
             <h2>Your Comfort & Peace of Mind Are Guaranteed</h2>
             <p>
@@ -527,7 +593,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="owner-promise-right">
+          <div className="owner-promise-right" data-reveal="right">
             <Link to="/rooms" className="owner-btn-book">
               RESERVE YOUR ROOM
             </Link>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHotel } from '../../context/HotelContext';
-import { Booking, PhysicalRoom } from '../../types/hotel';
+import { Booking, PhysicalRoom, isPaymentSettled, getPaymentStatusLabel } from '../../types/hotel';
 import {
   Search,
   CheckCircle2,
@@ -30,6 +30,7 @@ export const AdminBookingVerification: React.FC = () => {
     formatCurrency,
     approveBooking,
     rejectBooking,
+    reviewPayment,
     expireBookingNow,
     searchBookingByCode,
     searchBookingAsync,
@@ -111,6 +112,38 @@ export const AdminBookingVerification: React.FC = () => {
 
   const handleQuickSelect = (code: string) => {
     setInputCode(code);
+  };
+
+  const latestPayment = matchedBooking?.payments?.[0];
+
+  const handleVerifyPayment = async (approve: boolean) => {
+    if (!matchedBooking) return;
+    let reason: string | undefined;
+    if (!approve) {
+      const input = window.prompt('Reason for rejecting this payment reference:');
+      if (input === null) return;
+      reason = input.trim();
+      if (!reason) {
+        setFeedbackMsg({ type: 'error', text: 'A rejection reason is required.' });
+        return;
+      }
+    }
+    const res = await reviewPayment(
+      matchedBooking.bookingCode || matchedBooking.id,
+      approve,
+      reason
+    );
+    if (res.success && res.booking) {
+      setMatchedBooking(res.booking);
+      setFeedbackMsg({
+        type: 'success',
+        text: approve
+          ? 'Payment reference verified. You may now approve the booking.'
+          : 'Payment reference rejected. Guest can resubmit a corrected UTR.'
+      });
+    } else {
+      setFeedbackMsg({ type: 'error', text: res.message });
+    }
   };
 
   const formatRemainingTime = (expiresAt?: string) => {
@@ -375,13 +408,20 @@ export const AdminBookingVerification: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 font-medium">Payment Status:</span>
-                  <span className="font-extrabold text-emerald-700 flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span className="uppercase">PAID VERIFIED</span>
-                  </span>
+                  {isPaymentSettled(matchedBooking.paymentStatus) ? (
+                    <span className="font-extrabold text-emerald-700 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span className="uppercase">{getPaymentStatusLabel(matchedBooking.paymentStatus)}</span>
+                    </span>
+                  ) : (
+                    <span className="font-extrabold text-amber-700 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="uppercase">{getPaymentStatusLabel(matchedBooking.paymentStatus)}</span>
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 font-medium">Total Amount Paid:</span>
+                  <span className="text-gray-500 font-medium">Payable Amount:</span>
                   <span className="font-black text-sm text-gray-900">
                     {formatCurrency(matchedBooking.totalAmount)}
                   </span>
@@ -391,6 +431,40 @@ export const AdminBookingVerification: React.FC = () => {
                     <span className="text-gray-400">Transaction ID:</span>
                     <span className="font-mono text-gray-600">{matchedBooking.transactionId}</span>
                   </div>
+                )}
+                {latestPayment && (
+                  <>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-gray-400">UPI Reference (UTR):</span>
+                      <span className="font-mono text-gray-700">{latestPayment.utr || '—'}</span>
+                    </div>
+                    {latestPayment.rejectionReason && (
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-gray-400">Rejection Reason:</span>
+                        <span className="text-red-600 font-semibold text-right max-w-[60%]">
+                          {latestPayment.rejectionReason}
+                        </span>
+                      </div>
+                    )}
+                    {latestPayment.status === 'reference_submitted' && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleVerifyPayment(true)}
+                          className="flex-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer"
+                        >
+                          Verify Payment
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleVerifyPayment(false)}
+                          className="flex-1 px-3 py-1.5 border border-red-300 hover:bg-red-50 text-red-700 text-[11px] font-bold rounded-lg cursor-pointer"
+                        >
+                          Reject Payment
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

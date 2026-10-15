@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { apiRequest } from "../services/api";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function formatDate(value) {
   if (!value) return "—";
@@ -22,6 +23,8 @@ function Account() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useScrollReveal(bookings.length);
 
   useEffect(() => {
     let active = true;
@@ -73,13 +76,13 @@ function Account() {
   return (
     <main className="account-page">
       <section className="account-heading">
-        <p className="section-label">SV GRAND LUXURY ROOMS</p>
-        <h1>Your Account</h1>
-        <p>Manage your profile and keep track of your stays.</p>
+        <p className="section-label" data-reveal="fade">SV GRAND LUXURY ROOMS</p>
+        <h1 data-reveal>Your Account</h1>
+        <p data-reveal="fade">Manage your profile and keep track of your stays.</p>
       </section>
 
       <div className="account-layout">
-        <section className="account-card account-profile">
+        <section className="account-card account-profile" data-reveal="left">
           <div className="account-card-heading">
             <div className="account-avatar">
               {(name || user.email || "G").slice(0, 1).toUpperCase()}
@@ -120,7 +123,7 @@ function Account() {
           </form>
         </section>
 
-        <section className="account-card account-history">
+        <section className="account-card account-history" data-reveal="right">
           <div className="account-section-heading">
             <div>
               <p className="section-label">YOUR STAYS</p>
@@ -141,7 +144,7 @@ function Account() {
           ) : (
             <div className="account-history-list">
               {bookings.slice(0, 4).map((booking) => (
-                <article className="account-history-item" key={booking.bookingId}>
+                <article className="account-history-item" key={booking.bookingId} data-reveal="up">
                   <div>
                     <strong>{booking.roomName}</strong>
                     <span>{formatDate(booking.checkIn)} – {formatDate(booking.checkOut)}</span>
@@ -157,7 +160,7 @@ function Account() {
         </section>
       </div>
 
-      <div className="account-logout-row">
+      <div className="account-logout-row" data-reveal="fade">
         <span>Signed in as {user.email}</span>
         <button type="button" className="account-logout" onClick={handleLogout}>
           Sign out

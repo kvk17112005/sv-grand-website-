@@ -103,7 +103,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden ${compact ? 'p-3' : 'p-5 sm:p-6 space-y-6'}`}>
+    <div className={`bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden up-section ${compact ? 'p-3' : 'p-5 sm:p-6 space-y-6'}`}>
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-100">
         <div>
@@ -115,7 +115,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
               RedBus-Style Floor & Seat Map
             </span>
           </div>
-          <h3 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight mt-1">
+          <h3 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight mt-1 up-title-accent">
             Pick Your Specific Room Number
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
@@ -165,7 +165,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
             <button
               key={f.id}
               onClick={() => setSelectedFloor(f.id as any)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer up-tab ${
                 selectedFloor === f.id
                   ? 'bg-gray-900 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-200 border border-gray-200'
@@ -210,7 +210,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
                     <div
                       key={room.roomNumber}
                       onClick={() => handleRoomClick(room)}
-                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none ${
+                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none up-berth ${
                         isSelected
                           ? 'border-blue-600 bg-blue-50/90 shadow-md ring-2 ring-blue-500 scale-[1.02]'
                           : isBooked
@@ -337,7 +337,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
                     <div
                       key={room.roomNumber}
                       onClick={() => handleRoomClick(room)}
-                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none ${
+                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none up-berth ${
                         isSelected
                           ? 'border-blue-600 bg-blue-50/90 shadow-md ring-2 ring-blue-500 scale-[1.02]'
                           : isBooked
@@ -464,7 +464,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
                     <div
                       key={room.roomNumber}
                       onClick={() => handleRoomClick(room)}
-                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none ${
+                      className={`relative p-3 rounded-xl border-2 transition-all flex flex-col justify-between text-left select-none up-berth ${
                         isSelected
                           ? 'border-blue-600 bg-blue-50/90 shadow-md ring-2 ring-blue-500 scale-[1.02]'
                           : isBooked
@@ -563,7 +563,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
 
       {/* Selected Room Floating Action Banner */}
       {currentSelectedNumber && (
-        <div className="p-3.5 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-150">
+        <div className="p-3.5 bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-150 up-banner">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm">
               #{currentSelectedNumber}
@@ -596,7 +596,7 @@ export const RedBusRoomGrid: React.FC<RedBusRoomGridProps> = ({
                   if (rt) setSelectedRoomForBooking(rt);
                 }
               }}
-              className="px-4 py-2 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer up-btn"
             >
               <span>Book Room #{currentSelectedNumber}</span>
               <ArrowRight className="w-3.5 h-3.5" />

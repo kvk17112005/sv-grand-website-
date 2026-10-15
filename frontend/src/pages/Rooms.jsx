@@ -13,6 +13,7 @@ import {
 import { RedBusRoomGrid } from "../components/outlineUser/RedBusRoomGrid";
 import { OffersSection } from "../components/outlineUser/OffersSection";
 import { useAuth } from "../context/useAuth";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import acRoom1 from "../assets/hotel/ac-room-1.jpg";
 import premiumAcRoom from "../assets/hotel/premium-ac-room.jpg";
 import nonAcRoom1 from "../assets/hotel/non-ac-room-1.jpg";
@@ -52,6 +53,8 @@ function Rooms() {
   const [showFloorGrid, setShowFloorGrid] = useState(false);
   const showcaseRef = useRef(null);
 
+  useScrollReveal();
+
   const filteredRooms =
     filter === "all"
       ? ROOMS_CATALOG
@@ -90,9 +93,9 @@ function Rooms() {
           HERO EDITORIAL HEADER
       ========================================= */}
       <section className="rooms-hero-header">
-        <p className="section-label-gold">SV GRAND LUXURY ROOMS · TADIPATRI</p>
-        <h1>Accommodations & Suites</h1>
-        <p>
+        <p className="section-label-gold" data-reveal="fade">SV GRAND LUXURY ROOMS · TADIPATRI</p>
+        <h1 data-reveal>Accommodations & Suites</h1>
+        <p data-reveal>
           Every room at SV Grand is an architectural retreat of quietude, spotless hygiene, and modern amenities. Crafted to provide restful slumber for pilgrims, families, and professionals.
         </p>
       </section>
@@ -100,7 +103,7 @@ function Rooms() {
       {/* =========================================
           CATEGORY FILTER SWITCHER
       ========================================= */}
-      <section className="rooms-filter-bar">
+      <section className="rooms-filter-bar" data-reveal="fade">
         <button
           type="button"
           className={`filter-tab-btn ${filter === "all" ? "active" : ""}`}
@@ -185,6 +188,7 @@ function Rooms() {
 
               {/* INFORMATION COLUMN */}
               <div className="suite-info-column">
+                <p className="suite-eyebrow">SV Grand Signature</p>
                 <h2 className="suite-title">{room.name}</h2>
 
                 {/* ACTIONS & BOOKING */}
@@ -218,7 +222,7 @@ function Rooms() {
       ========================================= */}
       <section className="rooms-perks-banner">
         <div className="rooms-perks-inner">
-          <div className="perk-box">
+          <div className="perk-box" data-reveal="up">
             <div className="perk-box-icon">
               <FaShieldAlt />
             </div>
@@ -228,7 +232,7 @@ function Rooms() {
             </div>
           </div>
 
-          <div className="perk-box">
+          <div className="perk-box" data-reveal="up">
             <div className="perk-box-icon">
               <FaClock />
             </div>
@@ -238,7 +242,7 @@ function Rooms() {
             </div>
           </div>
 
-          <div className="perk-box">
+          <div className="perk-box" data-reveal="up">
             <div className="perk-box-icon">
               <FaWifi />
             </div>
@@ -248,7 +252,7 @@ function Rooms() {
             </div>
           </div>
 
-          <div className="perk-box">
+          <div className="perk-box" data-reveal="up">
             <div className="perk-box-icon">
               <FaCar />
             </div>

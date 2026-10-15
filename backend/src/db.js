@@ -12,3 +12,22 @@ if (databaseUrl.searchParams.get("sslmode") === "require") {
 }
 
 export const pool = new Pool({ connectionString: databaseUrl.toString() });
+
+export async function withTransaction(run) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await run(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* connection may already be broken */
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}

@@ -1,34 +1,21 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useHotel } from "../context/HotelContext";
 import { useAuth } from "../context/useAuth";
 import { apiRequest } from "../services/api";
+import { isPaymentSettled, getPaymentStatusLabel } from "../types/hotel";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 import {
-  Calendar,
-  CheckCircle2,
   Clock,
   RefreshCw,
-  RotateCcw,
-  Sparkles,
   BedDouble,
   MapPin,
   Luggage,
-  ShieldCheck,
-  CreditCard,
   User,
   Zap,
   Printer,
-  ChevronRight,
   ArrowRight
 } from "lucide-react";
-
-function getLocalDate() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export default function MyBookings() {
   const { user } = useAuth();
@@ -44,13 +31,16 @@ export default function MyBookings() {
   const [backendBookings, setBackendBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [activeTab, setActiveTab] = useState("all");
 
   // Fetch bookings from backend
   const fetchBackendBookings = useCallback(async (isSilent = false) => {
-    if (!isSilent) setIsRefreshing(true);
+    if (!isSilent) {
+      setIsRefreshing(true);
+      setLoading(true);
+    }
     try {
       const response = await apiRequest("/api/bookings");
       if (response && Array.isArray(response.bookings)) {
@@ -72,7 +62,9 @@ export default function MyBookings() {
 
   // Initial load
   useEffect(() => {
-    setLoading(true);
+    // fetchBackendBookings manages its own loading/refresh state for the
+    // network request; the transition is intentional here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBackendBookings(false);
     if (typeof refreshBookingsFromBackend === "function") {
       refreshBookingsFromBackend();
@@ -256,12 +248,14 @@ export default function MyBookings() {
     return unifiedBookings;
   }, [unifiedBookings, activeTab]);
 
+  useScrollReveal(`${activeTab}-${filteredBookings.length}`);
+
   return (
     <main className="min-h-screen bg-[#0d1117] text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header Bar */}
-        <div className="bg-gradient-to-r from-slate-900 via-[#161b22] to-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div data-reveal="up" className="bg-gradient-to-r from-slate-900 via-[#161b22] to-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
           
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
@@ -331,7 +325,7 @@ export default function MyBookings() {
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800/80 text-sm">
+          <div data-reveal="up" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800/80 text-sm">
             <div className="bg-slate-800/40 border border-slate-800 p-3 rounded-xl">
               <span className="text-slate-400 text-xs block">Total Bookings</span>
               <strong className="text-xl font-bold text-white">{unifiedBookings.length}</strong>
@@ -358,7 +352,7 @@ export default function MyBookings() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center justify-between gap-4 border-b border-slate-800 pb-3">
+        <div data-reveal="fade" className="flex items-center justify-between gap-4 border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             {[
               { id: "all", label: `All (${unifiedBookings.length})` },
@@ -429,6 +423,7 @@ export default function MyBookings() {
               return (
                 <div
                   key={booking.id}
+                  data-reveal="up"
                   className="bg-[#161b22] border border-slate-800 hover:border-slate-700/80 rounded-2xl p-6 shadow-xl transition-all relative overflow-hidden"
                 >
                   {/* Status Banner */}
@@ -517,11 +512,13 @@ export default function MyBookings() {
                         <div className="flex items-center justify-between text-xs mb-1">
                           <span className="text-slate-400">Total Price</span>
                           <span className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded ${
-                            booking.paymentStatus === "paid"
+                            isPaymentSettled(booking.paymentStatus)
                               ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                               : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                           }`}>
-                            {booking.paymentStatus === "paid" ? "Paid Online" : "Pay at Front Desk"}
+                            {isPaymentSettled(booking.paymentStatus)
+                              ? "Paid / Verified"
+                              : getPaymentStatusLabel(booking.paymentStatus)}
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-white">

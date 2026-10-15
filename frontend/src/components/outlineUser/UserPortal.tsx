@@ -7,10 +7,11 @@ import { RoomListSection } from './RoomListSection';
 import { AmenitiesSection } from './AmenitiesSection';
 import { ReviewsSection } from './ReviewsSection';
 import { LocationSection } from './LocationSection';
+import './userPortal.css';
 
 export const UserPortal: React.FC = () => {
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="up-portal space-y-6">
       {/* Hotel Hero: Photos, Title, Ratings & Key Badges */}
       <HotelHero />
 

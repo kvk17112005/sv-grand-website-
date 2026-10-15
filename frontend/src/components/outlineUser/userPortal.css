@@ -1,0 +1,427 @@
+/* =====================================================
+   SV GRAND · USER PORTAL
+   Motion + micro-interaction system for all portal panels
+   (Hero, Search, Room Map, Offers, Rooms, Amenities,
+    Reviews, Location) and their modals.
+   Kept lightweight: no scroll-time animation on large
+   containers, only small card-level transforms.
+===================================================== */
+
+@keyframes upPortalIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes upSheen {
+  0% {
+    left: -120%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  70% {
+    left: 130%;
+    opacity: 0;
+  }
+  100% {
+    left: 130%;
+    opacity: 0;
+  }
+}
+
+@keyframes upFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes upPinPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(166, 124, 50, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(166, 124, 50, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(166, 124, 50, 0);
+  }
+}
+
+@keyframes upRingBell {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15% {
+    transform: rotate(-12deg);
+  }
+  30% {
+    transform: rotate(10deg);
+  }
+  45% {
+    transform: rotate(-8deg);
+  }
+  60% {
+    transform: rotate(6deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes upDotsPan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 32px 32px;
+  }
+}
+
+@keyframes upBarGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes upBannerUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes upGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(166, 124, 50, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 18px 2px rgba(166, 124, 50, 0.45);
+  }
+}
+
+/* ---- Portal root: one cheap fade on mount ---- */
+.up-portal {
+  animation: upPortalIn 0.45s ease both;
+}
+
+/* ---- Section card chrome ---- */
+.up-section {
+  position: relative;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.up-section::before {
+  position: absolute;
+  top: -1px;
+  left: 18px;
+  right: 18px;
+  height: 3px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(90deg, #a67c32, rgba(166, 124, 50, 0));
+  content: "";
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.up-section:hover::before {
+  opacity: 1;
+}
+
+/* ---- Gold heading accent ---- */
+.up-title-accent {
+  position: relative;
+  display: inline-block;
+}
+
+.up-title-accent::after {
+  display: block;
+  width: 46px;
+  height: 3px;
+  margin-top: 7px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a67c32, rgba(166, 124, 50, 0));
+  content: "";
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.up-section:hover .up-title-accent::after,
+.up-card-parent:hover .up-title-accent::after {
+  width: 78px;
+}
+
+/* ---- Interactive card ---- */
+.up-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease,
+    border-color 0.32s ease;
+}
+
+.up-card::after {
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  content: "";
+  pointer-events: none;
+}
+
+.up-card:hover {
+  transform: translateY(-4px);
+  border-color: #d8c7a7;
+  box-shadow: 0 16px 34px rgba(48, 39, 25, 0.13);
+}
+
+.up-card:hover::after {
+  animation: upSheen 0.85s ease;
+}
+
+/* ---- Icon badges pop on parent hover ---- */
+.up-icon-badge {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s ease,
+    color 0.35s ease;
+}
+
+.up-card:hover .up-icon-badge,
+.up-icon-parent:hover .up-icon-badge {
+  transform: translateY(-2px) scale(1.12) rotate(-6deg);
+  background: #fbf6ec;
+}
+
+/* ---- Media (image) zoom + sweep ---- */
+.up-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.up-media img {
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.up-media:hover img {
+  transform: scale(1.09);
+}
+
+.up-media::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 32%, rgba(255, 255, 255, 0.28) 50%, transparent 68%);
+  transform: translateX(-130%);
+  transition: transform 0.85s ease;
+  content: "";
+  pointer-events: none;
+}
+
+.up-media:hover::after {
+  transform: translateX(130%);
+}
+
+/* ---- Buttons ---- */
+.up-btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+}
+
+.up-btn:hover {
+  transform: translateY(-1px);
+}
+
+.up-btn::after {
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  content: "";
+  pointer-events: none;
+}
+
+.up-btn:hover::after {
+  left: 140%;
+}
+
+/* ---- Tabs / chips ---- */
+.up-tab {
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.up-tab:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- Rating badge glow ---- */
+.up-glow {
+  animation: upGlow 3.2s ease-in-out infinite;
+}
+
+/* ---- Bell / concierge wiggle ---- */
+.up-bell:hover .up-bell-icon {
+  animation: upRingBell 0.9s ease;
+}
+
+/* ---- Map pin pulse ---- */
+.up-pin {
+  position: relative;
+}
+
+.up-pin::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+  animation: upPinPulse 2.4s ease-out infinite;
+}
+
+.up-map-dots {
+  animation: upDotsPan 9s linear infinite;
+}
+
+/* ---- Score bar grow ---- */
+.up-bar-fill {
+  transform-origin: left center;
+  animation: upBarGrow 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Floating selected-room banner ---- */
+.up-banner {
+  animation: upBannerUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Bookable room gentle attention ---- */
+.up-room-free {
+  animation: upGlow 3.6s ease-in-out infinite;
+}
+
+/* ---- RedBus berth card: lift without touching its status border ---- */
+.up-berth {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+
+.up-berth:hover {
+  transform: translateY(-3px);
+}
+
+/* =====================================================
+   DARK MODE (portal Tailwind panels)
+===================================================== */
+body.dark-mode .up-portal {
+  color: #e6e6e6;
+}
+
+body.dark-mode .up-portal .bg-gray-50\/40,
+body.dark-mode .up-portal .bg-gray-50\/60,
+body.dark-mode .up-portal .bg-gray-50\/70,
+body.dark-mode .up-portal .bg-gray-50\/80 {
+  background-color: rgba(38, 38, 38, 0.65) !important;
+}
+
+body.dark-mode .up-portal .bg-white\/90,
+body.dark-mode .up-portal .bg-white\/95 {
+  background-color: rgba(31, 31, 31, 0.92) !important;
+}
+
+body.dark-mode .up-portal .border-gray-100,
+body.dark-mode .up-portal .border-gray-200,
+body.dark-mode .up-portal .border-gray-200\/80 {
+  border-color: #333 !important;
+}
+
+body.dark-mode .up-portal .bg-gray-100 {
+  background-color: #262626 !important;
+}
+
+body.dark-mode .up-portal .bg-gray-200 {
+  background-color: #333 !important;
+}
+
+body.dark-mode .up-portal .text-gray-700,
+body.dark-mode .up-portal .text-gray-800 {
+  color: #d4d4d4 !important;
+}
+
+body.dark-mode .up-card:hover {
+  border-color: #4d3f24;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.55);
+}
+
+body.dark-mode .up-card::after,
+body.dark-mode .up-media::after {
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+body.dark-mode .up-icon-badge {
+  background: #262626;
+}
+
+/* =====================================================
+   REDUCED MOTION
+===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .up-portal,
+  .up-glow,
+  .up-room-free,
+  .up-map-dots,
+  .up-bar-fill,
+  .up-banner,
+  .up-pin::after {
+    animation: none;
+  }
+
+  .up-card,
+  .up-card::after,
+  .up-icon-badge,
+  .up-media img,
+  .up-media::after,
+  .up-btn,
+  .up-btn::after,
+  .up-tab,
+  .up-title-accent::after {
+    transition: none;
+  }
+
+  .up-card:hover,
+  .up-card:hover .up-icon-badge,
+  .up-icon-parent:hover .up-icon-badge,
+  .up-btn:hover,
+  .up-tab:hover {
+    transform: none;
+  }
+
+  .up-media:hover img {
+    transform: none;
+  }
+
+  .up-card:hover::after,
+  .up-media:hover::after,
+  .up-btn:hover::after {
+    animation: none;
+    transform: translateX(-130%);
+  }
+}

@@ -1,27 +1,46 @@
-# SV Grand API
+# SV Grand API (Backend)
 
-Node.js API for customer accounts, secure sessions, bookings, and management dashboards.
+Secure Express + PostgreSQL backend for SV Grand Luxury Rooms (Tadipatri, AP, India). Raw SQL (no ORM), sessions, CSRF, rate limiting, zod validation. Manual UPI payments with admin verification.
 
-## Configure and run
+## Features
+- Hybrid inventory (room-type allotment + physical room assignment) with btree_gist exclusion
+- Unified booking state machine + payment state
+- Guest checkout (nullable user + guests table)
+- REQ-XXXX pending reference → SVG-XXXXXX at approval
+- Pricing 12h/24h, extra guests, coupons, add-ons, tax configurable (0)
+- Admin approval, UTR submission, payment verification
+- Catalog, availability, bookings, admin endpoints
 
-1. Use Node.js 20.6 or newer.
-2. Run `npm install` in this directory.
-3. Copy `.env.example` to `.env`. Set `DATABASE_URL` to the rotated Neon connection string, generate a unique random `SESSION_SECRET` of at least 32 characters, and set `FRONTEND_ORIGIN` to the exact frontend origin.
-4. Run `npm run db:migrate` once against the intended Neon database.
-5. Run `npm run start` to start the API. Use `npm run dev` for local development.
-6. In `frontend/.env`, set `VITE_API_BASE_URL` to the API origin, then restart Vite.
+## Quick Start (local)
+1. Copy `.env.example` to `.env` and fill values (Neon URLs, FRONTEND_ORIGIN http://localhost:5173, SESSION_SECRET).
+2. `npm install`
+3. `npm run db:migrate` (to live DB) or ensure test DB exists.
+4. `npm run dev`
 
-For a frontend and API deployed on different sites, configure `COOKIE_SAME_SITE=none`, use HTTPS for both, and set `NODE_ENV=production`. For local development, use `COOKIE_SAME_SITE=lax`.
+## Scripts
+- `dev` — node --watch
+- `start` — production start
+- `db:migrate` — ordered migrations
+- `db:seed-accounts` — seed default accounts
+- `admin:promote` — promote user
+- `test` — node:test against `DATABASE_URL_TEST` (isolated)
 
-## Create privileged staff
+## Default accounts (seed)
+user@svgrand.com / hoteladmin@svgrand.com / superadmin@svgrand.com with password `Password@123`. Change in production.
 
-Register a normal customer account first, then run:
+## Endpoints
+See [API.md](API.md). Frontend uses these; CSRF required for writes.
 
-```sh
-npm run admin:promote -- staff@example.com admin
-npm run admin:promote -- owner@example.com super_admin
-```
+## Testing
+34 tests cover auth, booking lifecycle, inventory/overbooking, pricing, manual UPI payment verification (approve/reject/reopen), guest-account linking, and security (no email leak, admin auth, CSRF, CORS PATCH). Run `npm test`.
 
-Only this database-backed operator command can grant staff roles. Public registration never accepts a role. The API checks current database roles on each protected request; frontend route guards are only for navigation and are not the authorization boundary.
+## Migrations
+001-009 applied safely to live DB. Runner: transaction per file, `pg_advisory_lock`, direct non-pooler for lock safety.
 
-The migration creates `users`, `user_sessions`, `bookings`, and `schema_migrations`. Passwords are stored as bcrypt hashes. Aadhaar values are not stored or sent to this API. Booking totals are recalculated from the server room catalog.
+## Security notes
+- No secrets in `.env.example`
+- Auth filters by `users.status='active'`
+- Admin endpoints locked down
+- Unauthenticated `/api/bookings` returns empty
+- PATCH in CORS
+- Parameterized SQL

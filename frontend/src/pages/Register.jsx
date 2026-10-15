@@ -3,11 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 import { getDashboardPath } from "../context/authRoles";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function Register() {
   const navigate = useNavigate();
   const location = useLocation();
   const { register } = useAuth();
+
+  useScrollReveal();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -45,13 +48,13 @@ function Register() {
         <div className="login-card">
 
           <div className="login-header">
-            <p className="section-label">
+            <p className="section-label" data-reveal="fade">
               SV GRAND LUXURY ROOMS
             </p>
 
-            <h1>Create Account</h1>
+            <h1 data-reveal>Create Account</h1>
 
-            <p>
+            <p data-reveal="fade">
               Create your account to manage your
               bookings and reservations.
             </p>
@@ -60,6 +63,7 @@ function Register() {
           <form
             className="login-form"
             onSubmit={handleSubmit}
+            data-reveal="up"
           >
 
             <div className="login-field">
@@ -167,7 +171,7 @@ function Register() {
             <span>OR</span>
           </div>
 
-          <div className="login-register">
+          <div className="login-register" data-reveal="fade">
             <p>
               Already have an account?
             </p>

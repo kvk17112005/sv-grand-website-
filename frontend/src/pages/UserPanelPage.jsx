@@ -11,12 +11,15 @@ import {
   User,
 } from "lucide-react";
 import { getFirstName } from "../context/authRoles";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 export default function UserPanelPage() {
   const { user } = useAuth();
   const { setIsMyBookingsOpen, bookings } = useHotel();
   const firstName = getFirstName(user);
   const isStaff = user?.role === "admin" || user?.role === "super_admin";
+
+  useScrollReveal();
 
   const userBookings = useMemo(() => {
     if (!user) return bookings;
@@ -41,7 +44,7 @@ export default function UserPanelPage() {
     <main className="min-h-screen bg-gray-50 pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-150">
         {/* 1. TOP PORTAL SWITCHER BANNER (Matches Hotel Admin & Super Admin) */}
-        <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div data-reveal="down" className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#a67c32] text-white flex items-center justify-center font-bold text-xs shadow-xs">
               USR
@@ -76,7 +79,7 @@ export default function UserPanelPage() {
         </div>
 
         {/* 2. USER PROFILE & CONSOLE HERO CARD (Matches Hotel Admin & Super Admin Top Card) */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div data-reveal="up" className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-[#a67c32] uppercase tracking-wider mb-1">
               <User className="w-4 h-4" />

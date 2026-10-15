@@ -14,7 +14,8 @@ import {
   RoomStatus,
   BookingStatus,
   StayDuration,
-  ApprovalStatus
+  ApprovalStatus,
+  isPaymentSettled
 } from '../types/hotel';
 import {
   INITIAL_HOTEL,
@@ -30,6 +31,7 @@ import {
   CURRENT_DEMO_USER
 } from '../data/seedData';
 import { apiRequest } from '../services/api';
+import { useAuth } from './useAuth';
 
 export type ActivePortal = 'guest' | 'user' | 'hotel_admin' | 'super_admin';
 
@@ -130,6 +132,7 @@ interface HotelContextType {
   ) => Booking;
   approveBooking: (codeOrId: string) => { success: boolean; message: string; booking?: Booking };
   rejectBooking: (codeOrId: string, reason?: string) => { success: boolean; message: string };
+  reviewPayment: (codeOrId: string, approve: boolean, reason?: string) => Promise<{ success: boolean; message: string; booking?: Booking }>;
   expireBookingNow: (codeOrId: string) => void;
   searchBookingByCode: (code: string) => Booking | undefined;
   searchBookingAsync: (code: string) => Promise<Booking | null>;
@@ -222,6 +225,52 @@ function calculateNights(checkIn: string, checkOut: string): number {
   return diffDays > 0 ? diffDays : 1;
 }
 
+// SV Grand standard stay times (IST). Guests may check in at 12:00 PM and
+// must check out by 11:00 AM. A stay is occupied across this whole window and
+// the room is only released once the clock passes the check-out date & time.
+export const HOTEL_CHECK_IN_TIME = '12:00 PM';
+export const HOTEL_CHECK_OUT_TIME = '11:00 AM';
+const HOTEL_UTC_OFFSET = '+05:30';
+
+// Convert a 12-hour clock string (e.g. "11:00 AM") into 24-hour "HH:MM".
+function timeTo24h(timeStr: string): string {
+  const match = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)?\s*$/i.exec(timeStr || '');
+  if (!match) return '11:00';
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const meridiem = (match[3] || '').toUpperCase();
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
+// Build an absolute ISO timestamp from a calendar date + a clock time,
+// interpreting both in India Standard Time regardless of the device timezone.
+export function hotelDateTimeIso(dateStr: string, timeStr: string): string {
+  const date = (dateStr || '').slice(0, 10);
+  const hhmm = timeTo24h(timeStr);
+  const parsed = new Date(`${date}T${hhmm}:00${HOTEL_UTC_OFFSET}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date(`${date}T${hhmm}:00Z`).toISOString();
+  }
+  return parsed.toISOString();
+}
+
+// The moment a stay should auto-expire: the selected check-out date at the
+// hotel check-out time (11:00 AM IST). Falls back to +24h when the range is
+// missing or invalid so a room is never locked forever.
+export function computeStayCheckoutIso(checkInDate?: string, checkOutDate?: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  const checkIn = (checkInDate || today).slice(0, 10);
+  const checkOut = (checkOutDate || checkIn).slice(0, 10);
+  const checkInAt = new Date(hotelDateTimeIso(checkIn, HOTEL_CHECK_IN_TIME)).getTime();
+  const checkOutAt = new Date(hotelDateTimeIso(checkOut, HOTEL_CHECK_OUT_TIME)).getTime();
+  if (checkOutAt > checkInAt) {
+    return new Date(checkOutAt).toISOString();
+  }
+  return new Date(checkInAt + 24 * 3600 * 1000).toISOString();
+}
+
 const STORAGE_PREFIX = 'SV_GRAND_LUXURY_TPT_V2_';
 
 export function normalizeBackendBooking(b: any, physicalRooms: PhysicalRoom[]): Booking {
@@ -268,15 +317,33 @@ export function normalizeBackendBooking(b: any, physicalRooms: PhysicalRoom[]): 
   const grandTotal = Number(b.grandTotal || b.roomTotal || b.price || 1500);
   const price = Number(b.price || (nights > 0 ? Math.round(grandTotal / nights) : 1500));
 
+  // Stay expires at the selected check-out date & time (11:00 AM IST).
+  const expiresAt = b.expiresAt || computeStayCheckoutIso(checkIn, checkOut);
+  const expiryPassed = new Date(expiresAt).getTime() <= Date.now();
+
   const isApproved = b.status === 'approved' || b.status === 'confirmed';
   const isCancelled = b.status === 'cancelled';
   const isCheckedIn = b.status === 'checked_in';
   const isCheckedOut = b.status === 'checked_out';
+  const isNoShow = b.status === 'no_show';
+  const isPendingPayment = b.status === 'pending_payment';
+  const isPaymentVerification = b.status === 'payment_verification';
+  const hasExpired = isCheckedOut || expiryPassed;
 
   const approvalStatus: ApprovalStatus = isApproved || isCheckedIn || isCheckedOut ? 'approved' : (isCancelled ? 'rejected' : 'pending');
-  const bookingStatus: BookingStatus = isCancelled ? 'cancelled' : (isCheckedIn ? 'checked_in' : (isCheckedOut ? 'checked_out' : 'confirmed'));
-
-  const expiresAt = b.expiresAt || new Date(new Date(checkOut + 'T11:00:00Z').getTime()).toISOString();
+  const bookingStatus: BookingStatus = isCancelled
+    ? 'cancelled'
+    : isNoShow
+    ? 'no_show'
+    : isCheckedIn
+    ? 'checked_in'
+    : hasExpired
+    ? 'checked_out'
+    : isPaymentVerification
+    ? 'payment_verification'
+    : isPendingPayment
+    ? 'pending_payment'
+    : 'confirmed';
 
   return {
     id: bookingId,
@@ -308,7 +375,8 @@ export function normalizeBackendBooking(b: any, physicalRooms: PhysicalRoom[]): 
     taxAmount: 0,
     totalAmount: grandTotal,
     paymentMethod: b.paymentMethod || 'upi',
-    paymentStatus: b.paymentStatus || 'paid',
+    paymentStatus: b.paymentStatus || 'awaiting_payment',
+    payments: Array.isArray(b.payments) ? b.payments : [],
     approvalStatus,
     bookingStatus,
     transactionId: b.transactionId || `TXN-${bookingId.replace(/[^A-Za-z0-9]/g, '')}`,
@@ -320,6 +388,9 @@ export function normalizeBackendBooking(b: any, physicalRooms: PhysicalRoom[]): 
 }
 
 export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user: authUser } = useAuth();
+  const isBackendStaff = authUser?.role === 'admin' || authUser?.role === 'super_admin';
+
   // Load initial states from LocalStorage or seed data
   const [hotel, setHotel] = useState<HotelInfo>(() => {
     const saved = localStorage.getItem(STORAGE_PREFIX + 'HOTEL');
@@ -685,15 +756,17 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Synchronize bookings from backend database
   const refreshBookingsFromBackend = async () => {
-    try {
-      const res = await apiRequest('/api/admin/overview');
-      if (res?.bookings && Array.isArray(res.bookings)) {
-        res.bookings.forEach((b: any) => {
-          registerExternalBooking(b);
-        });
+    if (isBackendStaff) {
+      try {
+        const res = await apiRequest('/api/admin/overview');
+        if (res?.bookings && Array.isArray(res.bookings)) {
+          res.bookings.forEach((b: any) => {
+            registerExternalBooking(b);
+          });
+        }
+      } catch {
+        // not admin, continue to user bookings
       }
-    } catch {
-      // not admin, continue to user bookings
     }
 
     try {
@@ -716,14 +789,14 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       refreshBookingsFromBackend();
     }, 4000);
     return () => clearInterval(interval);
-  }, [isAutoUpdateEnabled]);
+  }, [isAutoUpdateEnabled, isBackendStaff]);
 
   // Window Focus Auto-Refresh
   useEffect(() => {
     const onFocus = () => refreshBookingsFromBackend();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, []);
+  }, [isBackendStaff]);
 
   // Search booking by confirmation code or ID with fuzzy, alphanumeric, and prefix matching
   const searchBookingByCode = (code: string): Booking | undefined => {
@@ -884,6 +957,43 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: true, message: 'Booking rejected and room made available.' };
   };
 
+  // Verify or reject a manually submitted UPI payment reference. Only an admin
+  // decision can mark a payment as verified — never the client submission.
+  const reviewPayment = async (
+    codeOrId: string,
+    approve: boolean,
+    reason?: string
+  ): Promise<{ success: boolean; message: string; booking?: Booking }> => {
+    const clean = codeOrId.trim();
+    try {
+      const res = await apiRequest(
+        `/api/admin/bookings/${encodeURIComponent(clean)}/payment/verify`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ approve, reason })
+        }
+      );
+      if (!res?.booking) {
+        throw new Error('The server returned an invalid payment response.');
+      }
+      const registered = registerExternalBooking(res.booking);
+      showToast(
+        approve
+          ? `✅ Payment verified for ${registered.bookingCode}.`
+          : `Payment rejected for ${registered.bookingCode}.`
+      );
+      return {
+        success: true,
+        message: approve ? 'Payment verified.' : 'Payment rejected.',
+        booking: registered
+      };
+    } catch (error: any) {
+      const message = error?.message || 'Could not update the payment.';
+      showToast(`❌ ${message}`);
+      return { success: false, message };
+    }
+  };
+
   // Fast-forward / Expire stay now (for testing Requirement 6 auto-release)
   const expireBookingNow = (codeOrId: string) => {
     const clean = codeOrId.trim().toUpperCase();
@@ -972,12 +1082,16 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       assignedRoomNumber = matchingRoom ? matchingRoom.roomNumber : undefined;
     }
 
-    // 3. Calculate stay start time and expiration based on stay duration (12h vs 24h)
+    // 3. Calculate stay start time and expiration.
+    //    A "12h" quick stay expires 12 hours from now, while a full stay
+    //    (24h / multi-night) is held until the selected check-out date & time.
     const chosenDuration: StayDuration = bookingData.stayDuration || stayDuration || '24h';
     const now = new Date();
     const startTime = now.toISOString();
-    const durationHours = chosenDuration === '12h' ? 12 : 24 * Math.max(1, bookingData.nights || 1);
-    const expiresAt = new Date(now.getTime() + durationHours * 3600 * 1000).toISOString();
+    const expiresAt =
+      chosenDuration === '12h'
+        ? new Date(now.getTime() + 12 * 3600 * 1000).toISOString()
+        : computeStayCheckoutIso(bookingData.checkInDate, bookingData.checkOutDate);
 
     const transactionId =
       bookingData.transactionId ||
@@ -995,7 +1109,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       durationDiscountAmount: bookingData.durationDiscountAmount || (chosenDuration === '12h' ? Math.round(1500 * 0.3) : 0),
       approvalStatus: 'pending', // PENDING ADMIN APPROVAL FOR FINAL CONFIRMATION
       bookingStatus: 'confirmed',
-      paymentStatus: bookingData.paymentStatus || 'paid',
+      paymentStatus: bookingData.paymentStatus || 'pending',
       transactionId,
       createdAt: startTime
     };
@@ -1044,7 +1158,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
 
     // 100% refund if paid online, or 0 if pay at hotel
-    const refund = target.paymentStatus === 'paid' ? target.totalAmount : 0;
+    const refund = isPaymentSettled(target.paymentStatus) ? target.totalAmount : 0;
 
     setBookings((prev) =>
       prev.map((b) =>
@@ -1458,6 +1572,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         createBooking,
         approveBooking,
         rejectBooking,
+        reviewPayment,
         expireBookingNow,
         searchBookingByCode,
         searchBookingAsync,

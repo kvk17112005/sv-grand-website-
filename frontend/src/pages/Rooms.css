@@ -93,22 +93,55 @@
 
 /* EDITORIAL SUITE SHOWCASE LIST */
 .suites-showcase-container {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   max-width: 1280px;
   margin: 0 auto;
   padding: 42px 6%;
-  overflow-x: clip;
   display: flex;
   flex-direction: column;
   gap: 65px;
   border-radius: 24px;
-  background:
-    linear-gradient(112deg, rgba(31, 27, 21, 0.42), rgba(31, 27, 21, 0.28)),
-    url("/hotel/corridor.jpg") center 48% / cover no-repeat;
+  background: #1b1712;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.suites-showcase-container::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  z-index: -2;
+  background: url("https://images.unsplash.com/photo-1758193783649-13371d7fb8dd?auto=format&fit=crop&w=1920&q=70")
+    center 46% / cover no-repeat;
+  animation: roomBgKen 30s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.suites-showcase-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 14% 18%, rgba(223, 186, 115, 0.2), transparent 55%),
+    linear-gradient(112deg, rgba(23, 19, 14, 0.62), rgba(31, 27, 21, 0.44));
+}
+
+@keyframes roomBgKen {
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(-1.6%, -2.2%, 0);
+  }
 }
 
 /* SINGLE SUITE ROW - ALTERNATING MAGAZINE LAYOUT */
 .suite-editorial-row {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1.15fr 1fr;
   gap: 52px;
@@ -119,6 +152,23 @@
   padding: 34px;
   box-shadow: 0 12px 36px rgba(48, 39, 25, 0.05);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.suite-editorial-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #dfba73, #a67c32);
+  z-index: 5;
+  transition: width 0.5s ease, left 0.5s ease;
+}
+
+.suite-editorial-row:hover::before {
+  width: 100%;
+  left: 0;
 }
 
 .suites-showcase-container.scroll-reveal-ready .suite-editorial-row {
@@ -179,17 +229,40 @@
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.45s ease;
+}
+
+.suite-main-image-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-18deg);
+  z-index: 2;
+  pointer-events: none;
+  transition: left 0.9s ease;
+}
+
+.suite-editorial-row:hover .suite-main-image-wrap {
+  box-shadow: 0 20px 44px rgba(166, 124, 50, 0.3);
+}
+
+.suite-editorial-row:hover .suite-main-image-wrap::after {
+  left: 150%;
 }
 
 .suite-main-image-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .suite-editorial-row:hover .suite-main-image-wrap img {
-  transform: scale(1.05);
+  transform: scale(1.08) rotate(0.6deg);
 }
 
 .suite-ribbon-tag {
@@ -358,6 +431,8 @@
 }
 
 .btn-book-suite {
+  position: relative;
+  overflow: hidden;
   background: #a67c32;
   color: #ffffff;
   padding: 12px 26px;
@@ -374,10 +449,26 @@
   gap: 7px;
 }
 
+.btn-book-suite::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+}
+
 .btn-book-suite:hover {
   background: #8e6826;
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(166, 124, 50, 0.5);
+}
+
+.btn-book-suite:hover::after {
+  left: 130%;
 }
 
 .btn-suite-details {
@@ -532,6 +623,10 @@
     transform: none;
     transition: none;
     will-change: auto;
+  }
+
+  .suites-showcase-container::before {
+    animation: none;
   }
 }
 

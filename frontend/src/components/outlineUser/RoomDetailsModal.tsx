@@ -47,7 +47,7 @@ export const RoomDetailsModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl max-w-3xl w-full overflow-hidden shadow-2xl border border-gray-200 flex flex-col max-h-[90vh] up-banner">
         {/* Header */}
         <div className="p-4 sm:px-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 sticky top-0 z-10">
           <div>
@@ -215,7 +215,7 @@ export const RoomDetailsModal: React.FC = () => {
 
             <button
               onClick={handleBookFromDetails}
-              className="px-5 py-2.5 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-2.5 bg-[#a67c32] hover:bg-[#8e6826] text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer up-btn"
             >
               <span>Select & Book Room</span>
               <ArrowRight className="w-4 h-4" />

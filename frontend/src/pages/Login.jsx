@@ -3,11 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { Eye, EyeOff } from "lucide-react";
 import { getDashboardPath } from "../context/authRoles";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, serviceError } = useAuth();
+
+  useScrollReveal();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,13 +39,13 @@ function Login() {
         <div className="login-card">
 
           <div className="login-header">
-            <p className="section-label">
+            <p className="section-label" data-reveal="fade">
               SV GRAND LUXURY ROOMS
             </p>
 
-            <h1>Welcome Back</h1>
+            <h1 data-reveal>Welcome Back</h1>
 
-            <p>
+            <p data-reveal="fade">
               Sign in to manage your bookings and
               continue your stay with us. Accounts created
               before shared sign-in was enabled need to be
@@ -53,6 +56,7 @@ function Login() {
           <form
             className="login-form"
             onSubmit={handleSubmit}
+            data-reveal="up"
           >
 
             <div className="login-field">
@@ -107,7 +111,7 @@ function Login() {
           </form>
 
           {/* DUMMY CREDENTIALS FOR 3 PANELS */}
-          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e7eb" }}>
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid #e5e7eb" }} data-reveal="up">
             <p style={{ fontSize: "11px", fontWeight: "800", color: "#a67c32", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 10px 0", textAlign: "center" }}>
               DEMO CREDENTIALS · CLICK TO AUTO-FILL
             </p>
@@ -208,7 +212,7 @@ function Login() {
             <span>OR</span>
           </div>
 
-          <div className="login-register">
+          <div className="login-register" data-reveal="fade">
             <p>
               Don't have an account?
             </p>

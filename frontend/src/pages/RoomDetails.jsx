@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 import acRoom1 from "../assets/hotel/ac-room-1.jpg";
 import premiumAcRoom from "../assets/hotel/premium-ac-room.jpg";
@@ -10,6 +11,8 @@ function RoomDetails() {
   const { type } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useScrollReveal();
 
   const rooms = {
     "ac-single": {
@@ -113,7 +116,7 @@ function RoomDetails() {
 
       <section className="room-details">
 
-        <div className="room-details-image">
+        <div className="room-details-image" data-reveal="left">
 
           <img
             src={room.image}
@@ -125,31 +128,31 @@ function RoomDetails() {
 
         <div className="room-details-content">
 
-          <p className="room-type">
+          <p className="room-type" data-reveal="fade">
             {room.type}
           </p>
 
-          <h1>
+          <h1 data-reveal>
             {room.name}
           </h1>
 
           {user && (
-            <div className="detail-price">
+            <div className="detail-price" data-reveal="fade">
               ₹{room.price.toLocaleString("en-IN")}
               <span> / night</span>
             </div>
           )}
 
-          <p className="detail-description">
+          <p className="detail-description" data-reveal>
             {room.description}
           </p>
 
 
-          <h3>
+          <h3 data-reveal>
             Room Facilities
           </h3>
 
-          <ul className="facilities-list">
+          <ul className="facilities-list" data-reveal>
 
             {room.facilities.map((facility) => (
 
@@ -162,7 +165,7 @@ function RoomDetails() {
           </ul>
 
 
-          <div className="details-actions">
+          <div className="details-actions" data-reveal="fade">
 
             <Link
               to="/rooms"

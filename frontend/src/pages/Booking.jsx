@@ -7,12 +7,15 @@ import {
 import { useAuth } from "../context/useAuth";
 import { useHotel } from "../context/HotelContext";
 import { apiRequest } from "../services/api";
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function Booking() {
   const { type } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { registerExternalBooking } = useHotel();
+
+  useScrollReveal();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -352,15 +355,15 @@ function Booking() {
 
       <section className="booking-header">
 
-        <p className="section-label">
+        <p className="section-label" data-reveal="fade">
           SV GRAND LUXURY ROOMS
         </p>
 
-        <h1>
+        <h1 data-reveal>
           Complete Your Booking
         </h1>
 
-        <p>
+        <p data-reveal="fade">
           Enter your details below to request
           your reservation.
         </p>
@@ -382,6 +385,7 @@ function Booking() {
         <form
           className="booking-form"
           onSubmit={handleSubmit}
+          data-reveal="up"
         >
           {submitError && (
             <p className="form-error" role="alert">{submitError}</p>
@@ -832,7 +836,7 @@ function Booking() {
             BOOKING SUMMARY
         ========================= */}
 
-        <aside className="booking-summary">
+        <aside className="booking-summary" data-reveal="right">
 
           <p className="section-label">
             YOUR SELECTION

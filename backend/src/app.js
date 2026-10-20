@@ -11,6 +11,7 @@ import accountRoutes from "./routes/account.js";
 import bookingRoutes from "./routes/bookings.js";
 import publicRoutes from "./routes/public.js";
 import adminRoutes from "./routes/admin.js";
+import paymentRoutes from "./routes/payments.js";
 
 const PgSession = connectPgSimple(session);
 
@@ -36,7 +37,14 @@ export function createApp() {
       allowedHeaders: ["Content-Type", config.csrfHeader],
     })
   );
-  app.use(express.json({ limit: "100kb" }));
+  app.use(
+    express.json({
+      limit: "100kb",
+      verify(req, _res, buffer) {
+        req.rawBody = Buffer.from(buffer);
+      },
+    })
+  );
   app.use(
     session({
       name: config.cookieName,
@@ -66,6 +74,7 @@ export function createApp() {
   app.use("/api/auth", authRoutes);
   app.use("/api/account", accountRoutes);
   app.use("/api/bookings", bookingRoutes);
+  app.use("/api/payments", paymentRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api", publicRoutes);
 

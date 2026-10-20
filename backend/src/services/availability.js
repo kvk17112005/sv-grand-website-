@@ -143,10 +143,31 @@ export async function pickAvailableRoom(db, roomTypeId, checkIn, checkOut) {
              AND br.stay && daterange($2::date, $3::date, '[)')
         )
       ORDER BY p.floor, p.room_number
-      LIMIT 1`,
+      LIMIT 1
+      FOR UPDATE OF p SKIP LOCKED`,
     [roomTypeId, checkIn, checkOut]
   );
   return result.rows[0] || null;
+}
+
+export async function pickAvailableRooms(db, roomTypeId, checkIn, checkOut, quantity) {
+  const result = await db.query(
+    `SELECT p.id, p.room_number AS "roomNumber"
+       FROM physical_rooms p
+      WHERE p.room_type_id = $1 AND p.is_active = true
+        AND p.operational_status NOT IN ('maintenance', 'out_of_service')
+        AND NOT EXISTS (
+          SELECT 1 FROM booking_rooms br
+           WHERE br.physical_room_id = p.id
+             AND br.is_active = true
+             AND br.stay && daterange($2::date, $3::date, '[)')
+        )
+      ORDER BY p.floor, p.room_number
+      LIMIT $4
+      FOR UPDATE OF p SKIP LOCKED`,
+    [roomTypeId, checkIn, checkOut, quantity]
+  );
+  return result.rows;
 }
 
 export function assertNotInPast(checkIn) {

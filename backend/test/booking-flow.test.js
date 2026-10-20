@@ -55,7 +55,7 @@ test("guest can create a booking request and see a REQ reference", async () => {
   assert.match(booking.requestReference, /^REQ-\d{4}$/);
   assert.equal(booking.bookingId, booking.requestReference);
   assert.equal(booking.status, "pending_payment");
-  assert.equal(booking.paymentStatus, "awaiting_payment");
+  assert.equal(booking.paymentStatus, "pending");
   assert.equal(booking.nights, 2);
   assert.equal(booking.roomTotal, 3000);
   assert.equal(booking.grandTotal, 3000);
@@ -124,6 +124,12 @@ test("admin approval assigns a booking ID, room, and verifies payment", async ()
   await guest.post(`/api/bookings/${reference}/payment`, { utr: "UTR987654321" }, { csrf: true });
 
   const admin = await adminClient();
+  const verified = await admin.post(
+    `/api/admin/bookings/${reference}/payment/verify`,
+    { approve: true },
+    { csrf: true }
+  );
+  assert.equal(verified.status, 200, JSON.stringify(verified.data));
   const approved = await admin.patch(
     `/api/admin/bookings/${reference}/status`,
     { status: "approved" },

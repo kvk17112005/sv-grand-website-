@@ -144,8 +144,11 @@ export const BookingsManager: React.FC = () => {
                     <td className="p-3.5">
                       <div className="font-extrabold text-gray-900">{b.guestName}</div>
                       <div className="text-[11px] text-gray-500">{b.guestPhone}</div>
+                      {b.guestEmail && (
+                        <div className="text-[10px] text-gray-500 break-all">{b.guestEmail}</div>
+                      )}
                       <div className="font-mono text-[10px] text-[#a67c32] font-bold mt-0.5">
-                        {b.id}
+                        {b.bookingCode || b.id}
                       </div>
                     </td>
 
@@ -179,13 +182,21 @@ export const BookingsManager: React.FC = () => {
                           </span>
                         ) : (
                           <button
-                            onClick={() => updateBookingPaymentStatus(b.id, 'paid')}
+                            onClick={() => updateBookingPaymentStatus(b.id, 'verified')}
                             className="text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded cursor-pointer"
                           >
-                            {getPaymentStatusLabel(b.paymentStatus)} &middot; Collect Cash/Card
+                            {getPaymentStatusLabel(b.paymentStatus)} &middot; Record Payment
                           </button>
                         )}
                         <span className="text-gray-400 capitalize">({b.paymentMethod.replace('_', ' ')})</span>
+                      </div>
+                      {b.payments?.[0]?.transactionReference && (
+                        <div className="mt-1 text-[10px] text-gray-500 break-all">
+                          Transaction: {b.payments[0].transactionReference}
+                        </div>
+                      )}
+                      <div className="mt-1 text-[10px] text-gray-500">
+                        Booking: {b.bookingStatus.replace('_', ' ')}
                       </div>
                     </td>
 

@@ -244,6 +244,7 @@ export const INITIAL_OFFERS: OfferCoupon[] = [
 export const INITIAL_ADD_ONS: AddOnService[] = [
   {
     id: 'addon-breakfast',
+    code: 'breakfast',
     name: 'Buffet Breakfast at The Regal Bistro',
     description: 'Unlimited hot continental & Indian breakfast spread with freshly brewed barista coffee',
     price: 299,
@@ -252,6 +253,7 @@ export const INITIAL_ADD_ONS: AddOnService[] = [
   },
   {
     id: 'addon-airport',
+    code: 'airport_transfer',
     name: 'Airport Transfer (Pick up or Drop)',
     description: 'Private air-conditioned sedan transfer from/to IGI Airport (T1/T2/T3)',
     price: 899,
@@ -260,6 +262,7 @@ export const INITIAL_ADD_ONS: AddOnService[] = [
   },
   {
     id: 'addon-latecheckout',
+    code: 'late_checkout',
     name: 'Guaranteed Late Check-out (till 3:00 PM)',
     description: 'Extend your relaxation without rush. Subject to hotel notification.',
     price: 499,
@@ -268,6 +271,7 @@ export const INITIAL_ADD_ONS: AddOnService[] = [
   },
   {
     id: 'addon-extrabed',
+    code: 'extra_bed',
     name: 'Extra Rollaway Bed with Linen',
     description: 'Plush rollaway mattress setup with premium duvet and double pillows',
     price: 600,

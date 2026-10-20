@@ -142,7 +142,7 @@ interface HotelContextType {
   checkInGuest: (bookingId: string, assignedRoomNumber?: string) => void;
   checkOutGuest: (bookingId: string) => void;
   updatePhysicalRoomStatus: (roomNumber: string, status: RoomStatus, notes?: string, assignedHousekeeper?: string) => void;
-  updateBookingPaymentStatus: (bookingId: string, paymentStatus: any) => void;
+  updateBookingPaymentStatus: (bookingId: string, paymentStatus: string) => Promise<void>;
   
   // Room Type Management
   updateRoomType: (id: string, data: Partial<RoomType>) => void;
@@ -361,7 +361,7 @@ export function normalizeBackendBooking(b: any, physicalRooms: PhysicalRoom[]): 
     checkInDate: checkIn,
     checkOutDate: checkOut,
     nights,
-    roomsCount: 1,
+    roomsCount: Number(b.roomsCount || 1),
     guestsCount: {
       adults,
       children
@@ -1293,11 +1293,21 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     showToast(`Room ${roomNumber} updated to ${status.toUpperCase()}`);
   };
 
-  const updateBookingPaymentStatus = (bookingId: string, paymentStatus: any) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, paymentStatus } : b))
-    );
-    showToast(`Booking ${bookingId} payment updated to ${paymentStatus}`);
+  const updateBookingPaymentStatus = async (bookingId: string, _paymentStatus: string) => {
+    if (!window.confirm('Confirm that the guest payment has been collected before recording it?')) {
+      return;
+    }
+    try {
+      const result = await apiRequest(
+        `/api/admin/bookings/${encodeURIComponent(bookingId)}/payment/collect`,
+        { method: 'POST', body: JSON.stringify({ method: 'pay_at_hotel' }) }
+      );
+      if (!result?.booking) throw new Error('The server returned an invalid payment response.');
+      registerExternalBooking(result.booking);
+      showToast(`Payment recorded for booking ${bookingId}.`);
+    } catch (error: any) {
+      showToast(error?.message || 'Could not record the payment.');
+    }
   };
 
   // Room Type Management

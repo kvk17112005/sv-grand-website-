@@ -58,6 +58,12 @@ async function createConfirmedBooking({ email, phone, dayOffset }) {
   await guest.post(`/api/bookings/${reference}/payment`, { utr: `UTR${phone}` }, { csrf: true });
 
   const admin = await loginAs("admin@svgrand.com");
+  const verified = await admin.post(
+    `/api/admin/bookings/${reference}/payment/verify`,
+    { approve: true },
+    { csrf: true }
+  );
+  assert.equal(verified.status, 200, JSON.stringify(verified.data));
   const approved = await admin.patch(
     `/api/admin/bookings/${reference}/status`,
     { status: "approved" },

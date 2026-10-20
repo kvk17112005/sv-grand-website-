@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { useAuth } from '../../context/useAuth';
 import { apiRequest } from '../../services/api';
-import { PaymentMethod, PaymentStatus, calculateStayPricing } from '../../types/hotel';
+import { PaymentMethod, calculateStayPricing } from '../../types/hotel';
+import { createIdempotencyKey } from '../../services/idempotency';
 import {
   X,
-  Calendar,
-  Users,
   BedDouble,
   ShieldCheck,
   Tag,
@@ -14,12 +13,16 @@ import {
   QrCode,
   Building,
   ArrowRight,
-  Sparkles,
-  Info,
   Wind,
-  Fan,
-  CheckCircle2
+  Fan
 } from 'lucide-react';
+
+function getBackendRoomName(name: string, isAC: boolean) {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('single')) return isAC ? 'AC Single Room' : 'Non-AC Single Room';
+  if (lowerName.includes('double')) return isAC ? 'AC Double Room' : 'Non-AC Double Room';
+  return isAC ? 'Deluxe AC Room' : 'Standard Non-AC Room';
+}
 
 export const BookingCheckoutModal: React.FC = () => {
   const {
@@ -59,6 +62,75 @@ export const BookingCheckoutModal: React.FC = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [serverQuote, setServerQuote] = useState<any>(null);
+  const [isQuoting, setIsQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState('');
+  const idempotencyKeyRef = useRef(createIdempotencyKey());
+
+  const selectedAddOnCodes = addOns
+    .filter((addon) => selectedAddOns.includes(addon.id))
+    .map((addon) => addon.code)
+    .filter((code): code is string => Boolean(code));
+  const selectedAddOnKey = selectedAddOnCodes.join(',');
+  const selectedCouponCode = appliedCoupon?.code || '';
+
+  useEffect(() => {
+    if (!selectedRoomForBooking) {
+      setServerQuote(null);
+      return;
+    }
+    let cancelled = false;
+    const roomName = getBackendRoomName(
+      selectedRoomForBooking.name,
+      Boolean(selectedRoomForBooking.isAC)
+    );
+    const requestBody = {
+      roomName,
+      checkIn: searchState.checkInDate,
+      checkOut: searchState.checkOutDate,
+      adults: Math.max(1, searchState.adults),
+      roomsCount: Math.max(1, searchState.roomsCount),
+      children13Plus: 0,
+      childrenBelow13: searchState.children,
+      addOnCodes: selectedAddOnKey ? selectedAddOnKey.split(',') : [],
+      couponCode: selectedCouponCode || undefined
+    };
+
+    setServerQuote(null);
+    setQuoteError('');
+    setIsQuoting(true);
+    const timer = window.setTimeout(() => {
+      apiRequest('/api/bookings/quote', {
+        method: 'POST',
+        body: JSON.stringify(requestBody)
+      })
+        .then((result) => {
+          if (!cancelled) setServerQuote(result?.quote || null);
+        })
+        .catch((error: any) => {
+          if (!cancelled) setQuoteError(error?.message || 'Could not verify the booking total.');
+        })
+        .finally(() => {
+          if (!cancelled) setIsQuoting(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [
+    selectedRoomForBooking?.id,
+    selectedRoomForBooking?.name,
+    selectedRoomForBooking?.isAC,
+    searchState.checkInDate,
+    searchState.checkOutDate,
+    searchState.adults,
+    searchState.children,
+    searchState.roomsCount,
+    selectedAddOnKey,
+    selectedCouponCode
+  ]);
 
   // Available rooms for this category
   const availableRoomsForType = selectedRoomForBooking
@@ -80,38 +152,7 @@ export const BookingCheckoutModal: React.FC = () => {
     searchState.roomsCount
   );
 
-  const baseRoomTotal = pricing.totalBaseRoomCost;
-
-  // Add-ons total
-  let addOnsTotal = 0;
   const chosenAddOnsList = addOns.filter((a) => selectedAddOns.includes(a.id));
-  chosenAddOnsList.forEach((a) => {
-    const cost = a.perNight ? a.price * nightsCount * searchState.roomsCount : a.price;
-    addOnsTotal += cost;
-  });
-
-  // Calculate discount
-  let discountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discountType === 'percentage') {
-      const calculated = Math.round((baseRoomTotal * appliedCoupon.discountValue) / 100);
-      discountAmount = appliedCoupon.maxDiscount
-        ? Math.min(calculated, appliedCoupon.maxDiscount)
-        : calculated;
-    } else {
-      discountAmount = appliedCoupon.discountValue;
-    }
-  }
-
-  // Wizard extra discount if member
-  let wizardDiscount = 0;
-  if (currentUser?.isWizardMember) {
-    wizardDiscount = Math.round((baseRoomTotal - discountAmount) * 0.05);
-  }
-
-  const netBeforeTax = Math.max(0, baseRoomTotal + addOnsTotal - discountAmount - wizardDiscount);
-  const grandTotal = netBeforeTax;
-
   const handleToggleAddOn = (id: string) => {
     setSelectedAddOns((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
@@ -123,10 +164,6 @@ export const BookingCheckoutModal: React.FC = () => {
     const clean = couponCodeInput.trim().toUpperCase();
     const found = offers.find((o) => o.code.toUpperCase() === clean && o.active);
     if (found) {
-      if (baseRoomTotal < found.minBookingAmount) {
-        showToast(`Min booking amount for ${found.code} is ₹${found.minBookingAmount}`);
-        return;
-      }
       setAppliedCoupon(found);
       showToast(`Coupon ${found.code} applied! Saved extra.`);
     } else {
@@ -141,18 +178,12 @@ export const BookingCheckoutModal: React.FC = () => {
       return;
     }
 
-    // Map the selected category to a backend room name.
-    let backendRoomName = 'Deluxe AC Room';
-    if (room.name.toLowerCase().includes('single')) {
-      backendRoomName = pricing.isAC ? 'AC Single Room' : 'Non-AC Single Room';
-    } else if (room.name.toLowerCase().includes('double')) {
-      backendRoomName = pricing.isAC ? 'AC Double Room' : 'Non-AC Double Room';
-    } else if (pricing.isAC) {
-      backendRoomName = 'Deluxe AC Room';
-    } else {
-      backendRoomName = 'Standard Non-AC Room';
+    if (!serverQuote) {
+      showToast(quoteError || 'Please wait for the backend to verify the total.');
+      return;
     }
 
+    const backendRoomName = getBackendRoomName(room.name, pricing.isAC);
     setIsProcessing(true);
     try {
       // The backend is the source of truth: it validates availability, prices
@@ -161,16 +192,20 @@ export const BookingCheckoutModal: React.FC = () => {
         method: 'POST',
         body: JSON.stringify({
           roomName: backendRoomName,
+          idempotencyKey: idempotencyKeyRef.current,
           name: guestName.trim(),
           phone: guestPhone.replace(/[^0-9+]/g, ''),
           email: guestEmail.trim().toLowerCase(),
           checkIn: searchState.checkInDate,
           checkOut: searchState.checkOutDate,
           adults: Math.max(1, searchState.adults),
+          roomsCount: Math.max(1, searchState.roomsCount),
           children13Plus: 0,
           childrenBelow13: searchState.children,
           totalGuests: Math.max(1, searchState.adults + searchState.children),
           paymentMethod,
+          addOnCodes: selectedAddOnCodes,
+          couponCode: appliedCoupon?.code,
           specialRequests: specialRequests.trim() || undefined
         })
       });
@@ -182,6 +217,27 @@ export const BookingCheckoutModal: React.FC = () => {
       const registered = registerExternalBooking(result.booking);
       setLatestConfirmedBooking(registered);
       setSelectedRoomForBooking(null);
+      idempotencyKeyRef.current = createIdempotencyKey();
+      if (paymentMethod === 'upi') {
+        try {
+          const payment = await apiRequest(
+            `/api/bookings/${encodeURIComponent(result.booking.id)}/payment-intent`,
+            { method: 'POST', body: JSON.stringify({}) }
+          );
+          if (!payment?.intent || !payment?.booking) {
+            throw new Error('The payment service returned an invalid response.');
+          }
+          const updated = registerExternalBooking(payment.booking);
+          setLatestConfirmedBooking({ ...updated, paymentIntent: payment.intent });
+        } catch (paymentError: any) {
+          setLatestConfirmedBooking({
+            ...registered,
+            paymentIntent: null,
+            paymentError: paymentError?.message || 'Payment setup is temporarily unavailable.'
+          });
+          showToast('Booking request saved. Payment setup failed; retry from the booking status window.');
+        }
+      }
       showToast(`🎉 Booking ${registered.bookingCode} received!`);
     } catch (error: any) {
       showToast(`❌ ${error?.message || 'Could not create the booking. Please try again.'}`);
@@ -412,7 +468,7 @@ export const BookingCheckoutModal: React.FC = () => {
                   {
                     id: 'upi',
                     label: 'UPI (GPay / PhonePe / Paytm)',
-                    desc: 'Pay via hotel UPI QR, then submit the UTR',
+                    desc: 'Pay directly in a compatible UPI app. Confirmation waits for verified payment.',
                     icon: <QrCode className="w-4 h-4 text-[#a67c32]" />
                   },
                   {
@@ -474,7 +530,14 @@ export const BookingCheckoutModal: React.FC = () => {
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="font-bold">{appliedCoupon.code} Applied</span>
                   </div>
-                  <span className="font-extrabold">- {formatCurrency(discountAmount)}</span>
+                  <span className="font-extrabold">
+                    {serverQuote ? `- ${formatCurrency(serverQuote.discountAmount)}` : 'Verifying…'}
+                  </span>
+                </div>
+              )}
+              {appliedCoupon && serverQuote && !serverQuote.couponEligible && (
+                <div className="mt-2 text-[11px] text-red-700" role="alert">
+                  This coupon does not apply to the server-verified booking total.
                 </div>
               )}
             </div>
@@ -489,7 +552,9 @@ export const BookingCheckoutModal: React.FC = () => {
                 <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 space-y-1.5 text-[11px]">
                   <div className="flex justify-between text-gray-700">
                     <span>24-Hour Base Tariff:</span>
-                    <span className="font-semibold text-gray-900">₹{pricing.twentyFourHourBase}</span>
+                    <span className="font-semibold text-gray-900">
+                      {serverQuote ? formatCurrency(serverQuote.twentyFourHourRate) : 'Verifying…'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-gray-700">
                     <span>Stay Duration:</span>
@@ -497,7 +562,9 @@ export const BookingCheckoutModal: React.FC = () => {
                   </div>
                   <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200">
                     <span>Effective Rate per Room:</span>
-                    <span>₹{pricing.effectiveStayRate}</span>
+                    <span>
+                      {serverQuote ? formatCurrency(serverQuote.effectiveRate) : 'Verifying…'}
+                    </span>
                   </div>
                 </div>
 
@@ -505,28 +572,43 @@ export const BookingCheckoutModal: React.FC = () => {
                   <span>
                     Room Base Total ({nightsCount} nights &bull; {searchState.roomsCount} room)
                   </span>
-                  <span className="font-semibold text-gray-900">{formatCurrency(baseRoomTotal)}</span>
+                  <span className="font-semibold text-gray-900">
+                    {serverQuote ? formatCurrency(serverQuote.roomTotal) : 'Verifying…'}
+                  </span>
                 </div>
 
-                {addOnsTotal > 0 && (
+                {(serverQuote?.addOnsTotal || 0) > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Selected Add-ons ({chosenAddOnsList.length})</span>
+                  <span className="font-semibold text-gray-900">
+                    +{formatCurrency(serverQuote.addOnsTotal)}
+                  </span>
+                </div>
+                )}
+
+                {(serverQuote?.extraGuestTotal || 0) > 0 && (
+                <div className="flex justify-between text-gray-700">
+                  <span>Additional guest charge</span>
+                  <span className="font-semibold text-gray-900">
+                    +{formatCurrency(serverQuote.extraGuestTotal)}
+                  </span>
+                </div>
+                )}
+
+                {(serverQuote?.taxAmount || 0) > 0 && (
                   <div className="flex justify-between text-gray-700">
-                    <span>Selected Add-ons ({chosenAddOnsList.length})</span>
-                    <span className="font-semibold text-gray-900">+{formatCurrency(addOnsTotal)}</span>
+                    <span>Taxes</span>
+                    <span className="font-semibold text-gray-900">
+                      +{formatCurrency(serverQuote.taxAmount)}
+                    </span>
                   </div>
                 )}
 
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-700 font-semibold">
-                    <span>Coupon Discount ({appliedCoupon?.code})</span>
-                    <span>-{formatCurrency(discountAmount)}</span>
-                  </div>
-                )}
-
-                {wizardDiscount > 0 && (
-                  <div className="flex justify-between text-amber-700 font-semibold">
-                    <span>Wizard Member Extra 5% Off</span>
-                    <span>-{formatCurrency(wizardDiscount)}</span>
-                  </div>
+                {(serverQuote?.discountAmount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Coupon Discount ({appliedCoupon?.code})</span>
+                  <span>-{formatCurrency(serverQuote.discountAmount)}</span>
+                </div>
                 )}
 
               </div>
@@ -536,14 +618,17 @@ export const BookingCheckoutModal: React.FC = () => {
                 <div>
                   <div className="text-xs text-gray-400 font-bold uppercase">Total Payable</div>
                   <div className="text-2xl font-black text-gray-900">
-                    {formatCurrency(grandTotal)}
+                    {serverQuote ? formatCurrency(serverQuote.grandTotal) : 'Verifying…'}
                   </div>
                 </div>
 
                 <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md font-bold">
-                  Guaranteed Best Price
+                  {isQuoting ? 'Verifying price…' : quoteError ? 'Price unavailable' : 'Backend verified'}
                 </span>
               </div>
+              {quoteError && (
+                <p className="text-xs text-red-700" role="alert">{quoteError}</p>
+              )}
 
               {/* Free Cancellation Note */}
               <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100 text-[11px] text-gray-600 flex items-center gap-2">
@@ -554,14 +639,18 @@ export const BookingCheckoutModal: React.FC = () => {
               {/* Submit CTA */}
               <button
                 onClick={handleConfirmReservation}
-                disabled={isProcessing}
+                disabled={isProcessing || isQuoting || !serverQuote || Boolean(quoteError)}
                 className="w-full py-3.5 bg-[#a67c32] hover:bg-[#8e6826] disabled:bg-gray-400 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2 up-btn"
               >
                 {isProcessing ? (
                   <span>Securing your room...</span>
                 ) : (
                   <>
-                    <span>Confirm & Book Stay</span>
+                    <span>
+                      {paymentMethod === 'upi' && serverQuote
+                        ? `Continue · ${formatCurrency(serverQuote.grandTotal)}`
+                        : 'Confirm & Book Stay'}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

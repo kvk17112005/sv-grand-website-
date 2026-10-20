@@ -37,6 +37,9 @@ export type BookingStatus =
 export type PaymentStatus =
   | 'paid'
   | 'pending'
+  | 'success'
+  | 'failed'
+  | 'cancelled'
   | 'partially_paid'
   | 'refunded'
   | 'awaiting_payment'
@@ -50,7 +53,7 @@ export type PaymentMethod = 'pay_at_hotel' | 'upi';
 /** True only when a payment has actually been completed/verified. */
 export function isPaymentSettled(status?: string): boolean {
   const value = (status || '').toLowerCase();
-  return value === 'paid' || value === 'verified';
+  return value === 'paid' || value === 'verified' || value === 'success';
 }
 
 /** Human-readable label for any payment status (local or backend). */
@@ -58,7 +61,12 @@ export function getPaymentStatusLabel(status?: string): string {
   switch ((status || '').toLowerCase()) {
     case 'paid':
     case 'verified':
+    case 'success':
       return 'Paid / Verified';
+    case 'failed':
+      return 'Payment Failed';
+    case 'cancelled':
+      return 'Payment Cancelled';
     case 'reference_submitted':
       return 'Payment Under Verification';
     case 'awaiting_payment':
@@ -201,6 +209,7 @@ export interface PhysicalRoom {
 
 export interface AddOnService {
   id: string;
+  code?: string;
   name: string;
   description: string;
   price: number; // per night or per stay
@@ -214,6 +223,7 @@ export interface BookingPayment {
   amount: number;
   status: string;
   utr?: string | null;
+  transactionReference?: string | null;
   upiId?: string | null;
   screenshotUrl?: string | null;
   submittedAt?: string | null;
@@ -257,6 +267,17 @@ export interface Booking {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   payments?: BookingPayment[];
+  paymentIntent?: {
+    paymentId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    upiUri: string;
+    merchantVpa: string;
+    merchantName: string;
+    provider: string;
+    transactionReference?: string | null;
+  } | null;
   approvalStatus: ApprovalStatus; // 'pending' | 'approved' | 'rejected'
   bookingStatus: BookingStatus;
   transactionId?: string;

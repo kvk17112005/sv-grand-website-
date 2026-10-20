@@ -8,11 +8,12 @@ import { bookingInput, bookingsQuery, paymentReferenceInput } from "../lib/schem
 import { notFound } from "../lib/errors.js";
 import {
   createBooking,
+  getBookingQuote,
   getBookingByReference,
   linkBookingToUser,
   listBookings,
 } from "../services/bookings.js";
-import { submitPaymentReference } from "../services/payments.js";
+import { createUpiPaymentIntent, submitPaymentReference } from "../services/payments.js";
 
 const router = Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -42,6 +43,27 @@ router.post("/", writeLimiter, requireCsrf, optionalAuth, validateBody(bookingIn
   const booking = await createBooking({ user: req.user, input: req.body });
   res.status(201).json({ booking });
 });
+
+router.post(
+  "/quote",
+  writeLimiter,
+  requireCsrf,
+  validateBody(bookingInput),
+  async (req, res) => {
+    res.json({ quote: await getBookingQuote({ input: req.body }) });
+  }
+);
+
+router.post(
+  "/:idOrRef/payment-intent",
+  writeLimiter,
+  requireCsrf,
+  async (req, res) => {
+    const bookingId = await resolveBookingId(req.params.idOrRef);
+    if (!bookingId) throw notFound("Booking not found.");
+    res.status(200).json(await createUpiPaymentIntent({ bookingId }));
+  }
+);
 
 router.get("/request/:reference", lookupLimiter, async (req, res) => {
   const booking = await getBookingByReference(req.params.reference);

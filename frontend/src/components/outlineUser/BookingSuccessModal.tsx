@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useHotel } from '../../context/HotelContext';
 import { isPaymentSettled, getPaymentStatusLabel } from '../../types/hotel';
+import { apiRequest } from '../../services/api';
 import confetti from 'canvas-confetti';
 import {
   CheckCircle2,
+  Clock3,
   X,
   Printer,
   Calendar,
@@ -22,22 +24,100 @@ export const BookingSuccessModal: React.FC = () => {
     setLatestConfirmedBooking,
     setIsMyBookingsOpen,
     hotel,
-    formatCurrency
+    formatCurrency,
   } = useHotel();
+  const [paymentMessage, setPaymentMessage] = useState('');
+  const [isStartingPayment, setIsStartingPayment] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+
+  const booking = latestConfirmedBooking;
+  const paymentIntent = booking?.paymentIntent;
+  const isConfirmed = booking?.bookingStatus === 'confirmed';
+  const paymentStatus = paymentIntent?.status || booking?.paymentStatus;
 
   useEffect(() => {
-    if (latestConfirmedBooking) {
-      // Trigger festive celebratory confetti
+    if (latestConfirmedBooking?.bookingStatus === 'confirmed') {
       confetti({
         particleCount: 80,
         spread: 70,
         origin: { y: 0.6 }
       });
     }
-  }, [latestConfirmedBooking]);
+  }, [latestConfirmedBooking?.id, latestConfirmedBooking?.bookingStatus]);
 
-  if (!latestConfirmedBooking) return null;
-  const b = latestConfirmedBooking;
+  const refreshPayment = useCallback(async () => {
+    if (!paymentIntent?.paymentId) return;
+    setIsCheckingPayment(true);
+    try {
+      const result = await apiRequest(`/api/payments/${encodeURIComponent(paymentIntent.paymentId)}`);
+      setLatestConfirmedBooking((current: any) =>
+        current
+          ? {
+              ...current,
+              bookingStatus: result.booking.bookingStatus,
+              status: result.booking.status,
+              paymentStatus: result.booking.paymentStatus,
+              paymentIntent: {
+                ...paymentIntent,
+                status: result.payment.status,
+                transactionReference: result.payment.transactionReference
+              }
+            }
+          : current
+      );
+      setPaymentMessage('');
+    } catch (error: any) {
+      setPaymentMessage(error?.message || 'Payment status could not be refreshed; it remains unverified.');
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  }, [paymentIntent, setLatestConfirmedBooking]);
+
+  const retryPayment = async () => {
+    if (!booking?.id) return;
+    setIsStartingPayment(true);
+    setPaymentMessage('');
+    try {
+      const result = await apiRequest(
+        `/api/bookings/${encodeURIComponent(booking.id)}/payment-intent`,
+        { method: 'POST', body: JSON.stringify({}) }
+      );
+      setLatestConfirmedBooking((current: any) =>
+        current
+          ? {
+              ...current,
+              bookingStatus: result.booking.bookingStatus,
+              status: result.booking.status,
+              paymentStatus: result.booking.paymentStatus,
+              paymentIntent: result.intent
+            }
+          : current
+      );
+    } catch (error: any) {
+      setPaymentMessage(error?.message || 'Could not prepare a payment request. Please retry.');
+    } finally {
+      setIsStartingPayment(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!paymentIntent?.paymentId || paymentIntent.status !== 'pending') return undefined;
+    const interval = window.setInterval(refreshPayment, 5000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshPayment();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', refreshPayment);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', refreshPayment);
+    };
+  }, [paymentIntent?.paymentId, paymentIntent?.status, refreshPayment]);
+
+  if (!booking) return null;
+  const b = booking;
+  const canRetry = ['failed', 'cancelled'].includes(String(paymentStatus).toLowerCase());
 
   const handlePrint = () => {
     window.print();
@@ -56,11 +136,17 @@ export const BookingSuccessModal: React.FC = () => {
           </button>
 
           <div className="w-12 h-12 rounded-full bg-white text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-md up-glow">
-            <CheckCircle2 className="w-7 h-7" />
+            {isConfirmed ? <CheckCircle2 className="w-7 h-7" /> : <Clock3 className="w-7 h-7" />}
           </div>
-          <h2 className="text-xl sm:text-2xl font-black">Booking Confirmed!</h2>
+          <h2 className="text-xl sm:text-2xl font-black">
+            {isConfirmed ? 'Booking Confirmed!' : 'Booking Request Received'}
+          </h2>
           <p className="text-xs text-red-100 mt-0.5">
-            Your stay at {hotel.name} is guaranteed. Confirmation SMS & Email sent.
+            {isConfirmed
+              ? `Your payment is verified and your stay at ${hotel.name} is confirmed.`
+              : isPaymentSettled(paymentStatus)
+                ? `Payment is verified; your stay at ${hotel.name} is awaiting final room confirmation.`
+                : `Your stay at ${hotel.name} is not confirmed until payment is verified.`}
           </p>
         </div>
 
@@ -86,13 +172,13 @@ export const BookingSuccessModal: React.FC = () => {
               {/* Booking Confirmation Code */}
               <div className="bg-amber-50/70 p-3.5 rounded-xl border-2 border-[#a67c32] sm:text-right">
                 <div className="text-[10px] uppercase font-black text-[#a67c32] tracking-wider">
-                  Booking Confirmation Code
+                  {isConfirmed ? 'Booking ID' : 'Booking Reference'}
                 </div>
                 <div className="text-xl font-black text-gray-900 tracking-wider font-mono">
                   {b.bookingCode || b.id}
                 </div>
                 <div className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                  {b.approvalStatus === 'approved' ? '✅ Admin Approved' : '⏳ Awaiting Front Desk Verification'}
+                  {isConfirmed ? 'Confirmed' : 'Pending payment verification'}
                 </div>
               </div>
             </div>
@@ -115,7 +201,7 @@ export const BookingSuccessModal: React.FC = () => {
                 <span className="text-[10px] font-bold text-gray-400 uppercase">Room & Duration</span>
                 <div className="font-bold text-gray-900 truncate">{b.roomTypeName}</div>
                 <div className="text-[11px] font-semibold text-[#a67c32]">
-                  Reservation confirmed
+                  {isConfirmed ? 'Reservation confirmed' : 'Payment verification pending'}
                 </div>
               </div>
 
@@ -125,7 +211,7 @@ export const BookingSuccessModal: React.FC = () => {
                   {b.assignedRoomNumber ? `Room ${b.assignedRoomNumber}` : 'Assigned at Front Desk'}
                 </div>
                 <div className="text-[10px] text-gray-400">
-                  {b.approvalStatus === 'approved' ? 'Key card active' : 'Awaiting admin approval'}
+                  {isConfirmed ? 'Confirmed booking' : 'Not confirmed yet'}
                 </div>
               </div>
             </div>
@@ -152,8 +238,69 @@ export const BookingSuccessModal: React.FC = () => {
                 <div className="text-[10px] text-gray-400 capitalize">
                   Via {b.paymentMethod.replace('_', ' ')}
                 </div>
+                {paymentIntent?.transactionReference && (
+                  <div className="text-[10px] text-gray-500 break-all">
+                    Transaction reference: {paymentIntent.transactionReference}
+                  </div>
+                )}
               </div>
             </div>
+
+            {b.paymentMethod === 'upi' && (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3 no-print">
+                <div>
+                  <div className="font-bold text-gray-900">UPI payment</div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {paymentStatus
+                      ? getPaymentStatusLabel(paymentStatus)
+                      : 'Preparing secure payment request…'}
+                    {' · '}
+                    {isConfirmed
+                      ? 'Booking confirmation is complete.'
+                      : isPaymentSettled(paymentStatus)
+                        ? 'Payment is verified; booking confirmation is still pending.'
+                        : 'Booking remains unconfirmed until trusted verification reaches our server.'}
+                  </p>
+                </div>
+                {paymentIntent?.upiUri && !isPaymentSettled(paymentStatus) && !canRetry && (
+                  <a
+                    href={paymentIntent.upiUri}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#a67c32] hover:bg-[#8e6826] px-5 py-3 text-white font-bold text-sm shadow-md transition-colors"
+                  >
+                    Pay {formatCurrency(paymentIntent.amount)} Now
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                )}
+                {(!paymentIntent || canRetry) && !isPaymentSettled(paymentStatus) && (
+                  <button
+                    type="button"
+                    onClick={retryPayment}
+                    disabled={isStartingPayment}
+                    className="w-full sm:w-auto rounded-xl bg-[#a67c32] hover:bg-[#8e6826] disabled:bg-gray-400 px-5 py-3 text-white font-bold text-sm shadow-md transition-colors"
+                  >
+                    {isStartingPayment ? 'Preparing…' : 'Retry Payment'}
+                  </button>
+                )}
+                {paymentIntent?.paymentId && (
+                  <button
+                    type="button"
+                    onClick={refreshPayment}
+                    disabled={isCheckingPayment}
+                    className="w-full sm:w-auto rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-800 font-semibold text-sm"
+                  >
+                    {isCheckingPayment ? 'Checking…' : 'Check payment status'}
+                  </button>
+                )}
+                <p className="text-[11px] text-gray-600">
+                  A compatible mobile browser may open an installed UPI app. After paying, return
+                  to this browser tab; payment status refreshes automatically when you return.
+                  App launching and return behavior vary by device. On desktop, use a phone with
+                  a UPI app or choose Pay at Hotel during checkout. Payment remains pending until
+                  verified by the server.
+                </p>
+                {paymentMessage && <p role="alert" className="text-xs text-red-700">{paymentMessage}</p>}
+              </div>
+            )}
 
             {/* Front Desk Helpline & QR Code check-in */}
             <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">

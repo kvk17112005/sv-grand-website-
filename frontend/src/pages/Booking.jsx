@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Link,
   useNavigate,
@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../context/useAuth";
 import { useHotel } from "../context/HotelContext";
 import { apiRequest } from "../services/api";
+import { createIdempotencyKey } from "../services/idempotency";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 
 function Booking() {
@@ -14,6 +15,7 @@ function Booking() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { registerExternalBooking } = useHotel();
+  const idempotencyKeyRef = useRef(createIdempotencyKey());
 
   useScrollReveal();
 
@@ -254,76 +256,25 @@ function Booking() {
     }
 
 
-    // =========================
-    // GENERATE BOOKING ID
-    // =========================
-
-    const today = new Date();
-
-    const datePart =
-      today
-        .toISOString()
-        .slice(0, 10)
-        .replace(/-/g, "")
-        .slice(2);
-
-    const randomPart =
-      Math.random()
-        .toString(36)
-        .substring(2, 8)
-        .toUpperCase();
-
-    const bookingId =
-      `SVG-${datePart}-${randomPart}`;
-
-
-    // =========================
-    // BOOKING DATA
-    // =========================
-
-    const bookingData = {
-      bookingId,
-
-      roomType: room.type,
-      roomName: room.name,
-      price: room.price,
-
-      name,
-      phone,
-      email,
-      aadhaar,
-
-      checkIn,
-      checkOut,
-
-      adults,
-      children,
-
-      children13Plus,
-      childrenBelow13,
-
-      totalGuests,
-      nights,
-
-      roomTotal,
-      extraGuestTotal,
-      grandTotal,
-    };
-
-
-    // =========================
-    // GO TO CONFIRMATION PAGE
-    // =========================
-
-
-    const safeBooking = { ...bookingData };
-    delete safeBooking.aadhaar;
     setSubmitting(true);
 
     try {
       const result = await apiRequest("/api/bookings", {
         method: "POST",
-        body: JSON.stringify({ ...safeBooking, email: user.email }),
+        body: JSON.stringify({
+          idempotencyKey: idempotencyKeyRef.current,
+          roomName: room.name,
+          name,
+          phone,
+          email: user.email || email,
+          checkIn,
+          checkOut,
+          adults,
+          children,
+          children13Plus,
+          childrenBelow13,
+          totalGuests,
+        }),
       });
       if (!result?.booking) {
         throw new Error("The account service returned an invalid booking response.");
@@ -333,6 +284,7 @@ function Booking() {
       } catch (regErr) {
         console.debug("External booking registration notice:", regErr);
       }
+      idempotencyKeyRef.current = createIdempotencyKey();
       navigate("/booking-confirmation", { state: result.booking });
     } catch (requestError) {
       setSubmitError(requestError.message);

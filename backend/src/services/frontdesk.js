@@ -1,4 +1,4 @@
-import { pool } from "../db.js";
+import { pool, withTransaction } from "../db.js";
 import { badRequest, conflict, notFound } from "../lib/errors.js";
 import { getHotelContext } from "./catalog.js";
 import { assignRoom, getBookingById, transitionBooking } from "./bookings.js";
@@ -71,21 +71,38 @@ export async function checkOutBooking({ bookingId, actor }) {
 }
 
 export async function collectPayment({ bookingId, input = {}, actor }) {
-  const booking = await getBookingById(pool, bookingId);
-  if (booking.paymentStatus === "verified") throw conflict("Payment already verified.");
+  return withTransaction(async (client) => {
+    const result = await client.query(
+      `SELECT id, grand_total AS amount, payment_status AS "paymentStatus"
+         FROM bookings WHERE id = $1 FOR UPDATE`,
+      [bookingId]
+    );
+    if (result.rowCount === 0) throw notFound("Booking not found.");
+    const booking = result.rows[0];
+    if (["verified", "success"].includes(booking.paymentStatus)) {
+      throw conflict("Payment already verified.");
+    }
 
-  const method = input.method === "upi" ? "upi" : "pay_at_hotel";
-  const amount = Number(input.amount ?? booking.grandTotal ?? 0);
+    const pendingUpi = await client.query(
+      `SELECT 1 FROM payments
+        WHERE booking_id = $1 AND provider = 'native_upi' AND status = 'pending'`,
+      [bookingId]
+    );
+    if (pendingUpi.rowCount > 0) {
+      throw conflict("Resolve the pending UPI payment before recording another payment.");
+    }
 
-  await pool.query(
-    `INSERT INTO payments (booking_id, method, amount, status, verified_by, verified_at, submitted_at)
-     VALUES ($1, $2, $3, 'verified', $4, now(), now())`,
-    [bookingId, method, amount, actor?.id ?? null]
-  );
-  await pool.query(
-    `UPDATE bookings SET payment_status = 'verified', updated_at = now() WHERE id = $1`,
-    [bookingId]
-  );
+    const method = input.method === "upi" ? "upi" : "pay_at_hotel";
+    await client.query(
+      `INSERT INTO payments (booking_id, provider, method, amount, status, verified_by, verified_at, submitted_at)
+       VALUES ($1, 'front_desk', $2, $3, 'verified', $4, now(), now())`,
+      [bookingId, method, booking.amount, actor?.id ?? null]
+    );
+    await client.query(
+      `UPDATE bookings SET payment_status = 'verified', updated_at = now() WHERE id = $1`,
+      [bookingId]
+    );
 
-  return getBookingById(pool, bookingId);
+    return getBookingById(client, bookingId);
+  });
 }

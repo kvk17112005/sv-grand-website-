@@ -43,6 +43,7 @@ export function serializeBooking(row, extra = {}) {
     children13Plus: num(row.children13Plus),
     childrenBelow13: num(row.childrenBelow13),
     totalGuests: num(row.totalGuests),
+    roomsCount: num(row.roomsCount) || 1,
 
     price: num(row.price),
     twentyFourHourRate: num(row.price),
@@ -99,6 +100,8 @@ export const BOOKING_SELECT = `
          b.children_13_plus  AS "children13Plus",
          b.children_below_13 AS "childrenBelow13",
          b.total_guests      AS "totalGuests",
+         (SELECT coalesce(sum(br.quantity), 1)::int
+            FROM booking_rooms br WHERE br.booking_id = b.id) AS "roomsCount",
          b.room_total        AS "roomTotal",
          b.extra_guest_total AS "extraGuestTotal",
          b.discount_amount   AS "discountAmount",

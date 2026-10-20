@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { pool, withTransaction } from "../db.js";
 import { badRequest, conflict, forbidden, notFound } from "../lib/errors.js";
 import { generateRequestReference, generateBookingId } from "../lib/references.js";
@@ -12,7 +13,7 @@ import {
   countReserved,
   getRoomTypeByCode,
   getRoomTypeRates,
-  pickAvailableRoom,
+  pickAvailableRooms,
   resolveRoomTypeCode,
 } from "./availability.js";
 import { findOfferByCode, getHotelContext } from "./catalog.js";
@@ -111,6 +112,7 @@ export async function createBooking({ user, input }) {
       ? toPositiveInt(input.childrenBelow13, 0)
       : Math.max(0, toPositiveInt(input.children, 0) - children13Plus);
   const totalGuests = adults + childrenBelow13 + children13Plus;
+  const roomsCount = toPositiveInt(input.roomsCount, 1) || 1;
 
   if (!name || !phone || !email) {
     throw badRequest("Guest name, phone, and email are required.");
@@ -130,11 +132,53 @@ export async function createBooking({ user, input }) {
   });
   if (!roomTypeCode) throw badRequest("A valid room type is required.");
 
-  return withTransaction(async (client) => {
+  const idempotencyKey = input.idempotencyKey || null;
+  const requestHash = idempotencyKey
+    ? createHash("sha256")
+        .update(
+          JSON.stringify({
+            userId: user?.id ?? null,
+            name,
+            phone,
+            email,
+            checkIn,
+            checkOut,
+            stayDuration,
+            roomTypeCode,
+            adults,
+            children13Plus,
+            childrenBelow13,
+            roomsCount,
+            addOnCodes: [...(input.addOnCodes || [])].sort(),
+            couponCode: input.couponCode || null,
+            paymentMethod: input.paymentMethod || "upi",
+            specialRequests: input.specialRequests || null,
+          })
+        )
+        .digest("hex")
+    : null;
+
+  try {
+    return await withTransaction(async (client) => {
+    if (idempotencyKey) {
+      const previous = await client.query(
+        `SELECT booking_id AS "bookingId", request_hash AS "requestHash"
+           FROM booking_idempotency_keys
+          WHERE idempotency_key = $1`,
+        [idempotencyKey]
+      );
+      if (previous.rowCount > 0) {
+        if (previous.rows[0].requestHash !== requestHash) {
+          throw conflict("This booking request key was already used for different details.");
+        }
+        return getBookingById(client, previous.rows[0].bookingId);
+      }
+    }
+
     const roomType = await getRoomTypeByCode(client, settings.hotelId, roomTypeCode);
-    if (totalGuests > roomType.maxGuests) {
+    if (totalGuests > roomType.maxGuests * roomsCount) {
       throw badRequest(
-        `${roomType.name} allows up to ${roomType.maxGuests} guests. You entered ${totalGuests}.`
+        `${roomType.name} allows up to ${roomType.maxGuests * roomsCount} guests across ${roomsCount} room(s). You entered ${totalGuests}.`
       );
     }
 
@@ -150,7 +194,7 @@ export async function createBooking({ user, input }) {
         [roomType.id]
       )
     ).rows[0].total;
-    if (reserved >= totalRooms) {
+    if (reserved + roomsCount > totalRooms) {
       throw conflict(`${roomType.name} is fully booked for the selected dates.`);
     }
 
@@ -160,8 +204,8 @@ export async function createBooking({ user, input }) {
     const addOnServices = await loadAddOnServices(client, settings.hotelId, input.addOnCodes || []);
     const addOns = addOnServices.map((svc) => ({
       service: svc,
+      amount: Math.round(Number(svc.price) * (svc.perNight ? nights : 1) * roomsCount),
       quantity: 1,
-      amount: Math.round(Number(svc.price) * (svc.perNight ? nights : 1)),
     }));
 
     const coupon = input.couponCode
@@ -174,13 +218,14 @@ export async function createBooking({ user, input }) {
       nights,
       children13Plus,
       extraGuestCharge: settings.extraGuestCharge,
+      roomCount: roomsCount,
       addOns,
       coupon,
       taxPercentage: settings.taxPercentage,
     });
 
     const guest = await findOrCreateGuest(client, user, { name, phone, email });
-    const paymentStatus = input.paymentMethod === "pay_at_hotel" ? "pay_at_hotel" : "awaiting_payment";
+    const paymentStatus = input.paymentMethod === "pay_at_hotel" ? "pay_at_hotel" : "pending";
     const holdExpiresAt = new Date(
       Date.now() + settings.holdExpiryMinutes * 60 * 1000
     ).toISOString();
@@ -221,17 +266,25 @@ export async function createBooking({ user, input }) {
       ],
     });
 
+    if (idempotencyKey) {
+      await client.query(
+        `INSERT INTO booking_idempotency_keys (idempotency_key, request_hash, booking_id)
+         VALUES ($1, $2, $3)`,
+        [idempotencyKey, requestHash, inserted.id]
+      );
+    }
+
     await client.query(
       `INSERT INTO booking_rooms (booking_id, room_type_id, quantity, stay, nightly_rate, room_total, is_active)
-       VALUES ($1, $2, 1, daterange($3::date, $4::date, '[)'), $5, $6, false)`,
-      [inserted.id, roomType.id, checkIn, checkOut, room24Rate, pricing.roomTotal]
+       VALUES ($1, $2, $3, daterange($4::date, $5::date, '[)'), $6, $7, false)`,
+      [inserted.id, roomType.id, roomsCount, checkIn, checkOut, room24Rate, pricing.roomTotal]
     );
 
     for (const item of addOns) {
       await client.query(
         `INSERT INTO booking_add_ons (booking_id, add_on_service_id, quantity, unit_price, per_night, amount)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        [inserted.id, item.service.id, item.quantity, item.service.price, item.service.perNight, item.amount]
+        [inserted.id, item.service.id, roomsCount, item.service.price, item.service.perNight, item.amount]
       );
     }
 
@@ -250,6 +303,100 @@ export async function createBooking({ user, input }) {
     );
 
     return getBookingById(client, inserted.id);
+    });
+  } catch (error) {
+    if (
+      idempotencyKey &&
+      error.code === "23505" &&
+      error.constraint === "booking_idempotency_keys_pkey"
+    ) {
+      const previous = await pool.query(
+        `SELECT booking_id AS "bookingId", request_hash AS "requestHash"
+           FROM booking_idempotency_keys
+          WHERE idempotency_key = $1`,
+        [idempotencyKey]
+      );
+      if (previous.rowCount > 0) {
+        if (previous.rows[0].requestHash !== requestHash) {
+          throw conflict("This booking request key was already used for different details.");
+        }
+        return getBookingById(pool, previous.rows[0].bookingId);
+      }
+    }
+    throw error;
+  }
+}
+
+export async function getBookingQuote({ input }) {
+  const settings = await loadSettings();
+  const checkIn = input.checkIn;
+  const checkOut = input.checkOut;
+  const nights = computeNights(checkIn, checkOut);
+  if (!Number.isInteger(nights) || nights <= 0) {
+    throw badRequest("Check-out must be after check-in.");
+  }
+  assertNotInPast(checkIn);
+
+  const adults = toPositiveInt(input.adults, 1) || 1;
+  const children13Plus = toPositiveInt(input.children13Plus, 0);
+  const childrenBelow13 =
+    input.childrenBelow13 != null
+      ? toPositiveInt(input.childrenBelow13, 0)
+      : Math.max(0, toPositiveInt(input.children, 0) - children13Plus);
+  const totalGuests = adults + childrenBelow13 + children13Plus;
+  const roomsCount = toPositiveInt(input.roomsCount, 1) || 1;
+  const roomTypeCode = resolveRoomTypeCode({
+    roomTypeCode: input.roomTypeCode,
+    roomName: input.roomName,
+  });
+  if (!roomTypeCode) throw badRequest("A valid room type is required.");
+
+  return withTransaction(async (client) => {
+    const roomType = await getRoomTypeByCode(client, settings.hotelId, roomTypeCode);
+    if (totalGuests > roomType.maxGuests * roomsCount) {
+      throw badRequest(
+        `${roomType.name} allows up to ${roomType.maxGuests * roomsCount} guests across ${roomsCount} room(s). You entered ${totalGuests}.`
+      );
+    }
+    const reserved = await countReserved(client, roomType.id, checkIn, checkOut);
+    const totalRooms = (
+      await client.query(
+        `SELECT count(*)::int AS total FROM physical_rooms WHERE room_type_id = $1 AND is_active = true`,
+        [roomType.id]
+      )
+    ).rows[0].total;
+    if (reserved + roomsCount > totalRooms) {
+      throw conflict(`${roomType.name} is fully booked for the selected dates.`);
+    }
+
+    const rates = await getRoomTypeRates(client, roomType.id);
+    const addOnServices = await loadAddOnServices(client, settings.hotelId, input.addOnCodes || []);
+    const addOns = addOnServices.map((svc) => ({
+      service: svc,
+      amount: Math.round(Number(svc.price) * (svc.perNight ? nights : 1) * roomsCount),
+      quantity: 1,
+    }));
+    const coupon = input.couponCode
+      ? await findOfferByCode(settings.hotelId, input.couponCode)
+      : null;
+    const pricing = calculateStayPricing({
+      room24Rate: rates[24],
+      stayDuration: input.stayDuration === 12 ? 12 : 24,
+      nights,
+      children13Plus,
+      extraGuestCharge: settings.extraGuestCharge,
+      roomCount: roomsCount,
+      addOns,
+      coupon,
+      taxPercentage: settings.taxPercentage,
+    });
+
+    return {
+      roomTypeName: roomType.name,
+      nights,
+      currency: "INR",
+      ...pricing,
+    };
   });
 }
 
@@ -283,7 +430,8 @@ export async function loadAddOns(db, bookingId) {
 
 export async function loadPayments(db, bookingId) {
   const result = await db.query(
-    `SELECT id, method, amount, status, utr, upi_id AS "upiId", screenshot_url AS "screenshotUrl",
+    `SELECT id, method, amount, status, utr, upi_id AS "upiId",
+            coalesce(provider_transaction_id, utr) AS "transactionReference",
             submitted_at AS "submittedAt", verified_at AS "verifiedAt",
             rejection_reason AS "rejectionReason", created_at AS "createdAt"
        FROM payments
@@ -397,10 +545,14 @@ export async function linkBookingToUser({ reference, user }) {
 
 export async function transitionBooking({ id, toStatus, actor, note, reason }) {
   return withTransaction(async (client) => {
+    if (toStatus === "confirmed") {
+      return confirmBookingInTransaction(client, id, actor, note);
+    }
+
     const current = await client.query(
       `SELECT id, status, booking_id AS "bookingId", check_in::text AS "checkIn",
               check_out::text AS "checkOut", room_type_id AS "roomTypeId",
-              assigned_room_id AS "assignedRoomId"
+              assigned_room_id AS "assignedRoomId", payment_status AS "paymentStatus"
          FROM bookings WHERE id = $1 FOR UPDATE`,
       [id]
     );
@@ -411,54 +563,17 @@ export async function transitionBooking({ id, toStatus, actor, note, reason }) {
       throw conflict(`Cannot move a booking from ${booking.status} to ${toStatus}.`);
     }
 
-    let bookingId = booking.bookingId;
-    if (toStatus === "confirmed" && !bookingId) {
-      bookingId = await allocateBookingId(client);
-    }
-
-    let assignedRoomId = booking.assignedRoomId;
-    if (toStatus === "confirmed" && !assignedRoomId) {
-      const room = await pickAvailableRoom(
-        client,
-        booking.roomTypeId,
-        booking.checkIn,
-        booking.checkOut
-      );
-      assignedRoomId = room?.id ?? null;
-    }
-
     await client.query(
       `UPDATE bookings
           SET status = $1,
-              booking_id = coalesce($2, booking_id),
-              assigned_room_id = coalesce($3, assigned_room_id),
-              confirmed_at = CASE WHEN $1 = 'confirmed' THEN now() ELSE confirmed_at END,
               checked_in_at = CASE WHEN $1 = 'checked_in' THEN now() ELSE checked_in_at END,
               checked_out_at = CASE WHEN $1 = 'checked_out' THEN now() ELSE checked_out_at END,
               cancelled_at = CASE WHEN $1 = 'cancelled' THEN now() ELSE cancelled_at END,
-              cancellation_reason = CASE WHEN $1 = 'cancelled' THEN $4 ELSE cancellation_reason END,
+              cancellation_reason = CASE WHEN $1 = 'cancelled' THEN $3 ELSE cancellation_reason END,
               updated_at = now()
-        WHERE id = $5`,
-      [toStatus, bookingId, assignedRoomId, reason ?? null, id]
+        WHERE id = $2`,
+      [toStatus, id, reason ?? null]
     );
-
-    if (toStatus === "confirmed") {
-      await client.query(
-        `UPDATE payments
-            SET status = 'verified', verified_by = $2, verified_at = now(),
-                updated_at = now(), rejection_reason = NULL
-          WHERE booking_id = $1 AND status = 'reference_submitted'`,
-        [id, actor?.id ?? null]
-      );
-      await client.query(
-        `UPDATE bookings
-            SET payment_status = 'verified'
-          WHERE id = $1
-            AND payment_status = 'reference_submitted'`,
-        [id]
-      );
-    }
-
 
     await client.query(
       `INSERT INTO booking_status_history (booking_id, from_status, to_status, actor_user_id, note)
@@ -468,6 +583,120 @@ export async function transitionBooking({ id, toStatus, actor, note, reason }) {
 
     return getBookingById(client, id);
   });
+}
+
+export async function confirmBookingInTransaction(client, id, actor, note, { requireRoom = true } = {}) {
+  const result = await client.query(
+    `SELECT id, status, booking_id AS "bookingId", payment_status AS "paymentStatus",
+            check_in::text AS "checkIn", check_out::text AS "checkOut",
+            room_type_id AS "roomTypeId", assigned_room_id AS "assignedRoomId"
+       FROM bookings WHERE id = $1 FOR UPDATE`,
+    [id]
+  );
+  if (result.rowCount === 0) throw notFound("Booking not found.");
+  const booking = result.rows[0];
+
+  if (booking.status === "confirmed") return getBookingById(client, id);
+  if (!canTransition(booking.status, "confirmed")) {
+    throw conflict(`Cannot confirm a booking from ${booking.status}.`);
+  }
+  if (!["success", "verified"].includes(booking.paymentStatus)) {
+    throw conflict("A booking can only be confirmed after payment has been verified.");
+  }
+
+  const allotmentResult = await client.query(
+    `SELECT id, quantity, nightly_rate AS "nightlyRate", room_total AS "roomTotal"
+       FROM booking_rooms
+      WHERE booking_id = $1 AND room_type_id = $2
+      ORDER BY created_at, id
+      FOR UPDATE`,
+    [id, booking.roomTypeId]
+  );
+  const roomCount = allotmentResult.rows.reduce((sum, row) => sum + Number(row.quantity), 0) || 1;
+  const rooms = await pickAvailableRooms(
+    client,
+    booking.roomTypeId,
+    booking.checkIn,
+    booking.checkOut,
+    roomCount
+  );
+  if (rooms.length < roomCount) {
+    if (!requireRoom) return getBookingById(client, id);
+    throw conflict("No room is currently available to confirm this booking.");
+  }
+  const bookingId = booking.bookingId || (await allocateBookingId(client));
+  const firstAllotment = allotmentResult.rows[0];
+  const perRoomTotal = Number(firstAllotment?.roomTotal || 0) / roomCount;
+
+  try {
+    if (firstAllotment) {
+      await client.query(
+        `UPDATE booking_rooms
+            SET quantity = 1, physical_room_id = $1, room_total = $2, is_active = true
+          WHERE id = $3`,
+        [rooms[0].id, perRoomTotal, firstAllotment.id]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO booking_rooms (
+           booking_id, room_type_id, physical_room_id, quantity, stay, nightly_rate, room_total, is_active
+         ) VALUES (
+           $1, $2, $3, 1, daterange($4::date, $5::date, '[)'), $6, $7, true
+         )`,
+        [
+          id,
+          booking.roomTypeId,
+          rooms[0].id,
+          booking.checkIn,
+          booking.checkOut,
+          firstAllotment?.nightlyRate ?? 0,
+          perRoomTotal,
+        ]
+      );
+    }
+    for (const room of rooms.slice(1)) {
+      await client.query(
+        `INSERT INTO booking_rooms (
+           booking_id, room_type_id, physical_room_id, quantity, stay, nightly_rate, room_total, is_active
+         ) VALUES (
+           $1, $2, $3, 1, daterange($4::date, $5::date, '[)'), $6, $7, true
+         )`,
+        [
+          id,
+          booking.roomTypeId,
+          room.id,
+          booking.checkIn,
+          booking.checkOut,
+          firstAllotment?.nightlyRate ?? 0,
+          perRoomTotal,
+        ]
+      );
+    }
+  } catch (error) {
+    if (error.code === "23P01") {
+      throw conflict("A selected room was booked by another guest. Please retry confirmation.");
+    }
+    throw error;
+  }
+
+  await client.query(
+    `UPDATE bookings
+        SET status = 'confirmed',
+            booking_id = coalesce($1, booking_id),
+            assigned_room_id = coalesce($3, assigned_room_id),
+            confirmed_at = now(),
+            updated_at = now()
+      WHERE id = $2`,
+    [bookingId, id, rooms[0].id]
+  );
+
+  await client.query(
+    `INSERT INTO booking_status_history (booking_id, from_status, to_status, actor_user_id, note)
+     VALUES ($1, $2, 'confirmed', $3, $4)`,
+    [id, booking.status, actor?.id ?? null, note ?? "Payment verified"]
+  );
+
+  return getBookingById(client, id);
 }
 
 async function allocateBookingId(client) {

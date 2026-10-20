@@ -16,6 +16,7 @@ export function computeNights(checkIn, checkOut) {
  * @param {number} input.room24Rate          published 24-hour rate for the room type
  * @param {12|24}  input.stayDuration        stay length in hours
  * @param {number} input.nights              number of nights (>=1; used only for 24h)
+ * @param {number} input.roomCount           number of rooms in the reservation
  * @param {number} input.children13Plus      count of guests 13+ beyond policy
  * @param {number} input.extraGuestCharge    per-night charge for a 13+ extra guest
  * @param {Array}  input.addOns              [{ amount }] pre-priced add-on line totals
@@ -28,6 +29,7 @@ export function calculateStayPricing(input) {
     room24Rate,
     stayDuration = 24,
     nights = 1,
+    roomCount = 1,
     children13Plus = 0,
     extraGuestCharge = 0,
     addOns = [],
@@ -39,7 +41,7 @@ export function calculateStayPricing(input) {
   const durationDiscountAmount = is12Hour ? round(room24Rate * 0.3) : 0;
   const effectiveRate = is12Hour ? room24Rate - durationDiscountAmount : room24Rate;
   const multiplier = is12Hour ? 1 : Math.max(1, nights);
-  const roomTotal = effectiveRate * multiplier;
+  const roomTotal = effectiveRate * multiplier * Math.max(1, roomCount);
 
   const extraGuestTotal = Math.max(0, children13Plus) * extraGuestCharge * multiplier;
   const addOnsTotal = addOns.reduce((sum, item) => sum + round(item.amount), 0);

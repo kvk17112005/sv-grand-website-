@@ -436,7 +436,9 @@ export const AdminBookingVerification: React.FC = () => {
                   <>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-gray-400">UPI Reference (UTR):</span>
-                      <span className="font-mono text-gray-700">{latestPayment.utr || '—'}</span>
+                      <span className="font-mono text-gray-700">
+                        {latestPayment.transactionReference || latestPayment.utr || '—'}
+                      </span>
                     </div>
                     {latestPayment.rejectionReason && (
                       <div className="flex justify-between text-[11px]">
